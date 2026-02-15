@@ -1,0 +1,417 @@
+.membership-page {
+  background: linear-gradient(180deg, #f8f9ff 0%, #e8ebff 100%);
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+.membership-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 10px;
+}
+
+.avatar-small {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.avatar-small img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.plan-title-section {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.plan-main-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.plan-subtitle {
+  font-size: 14px;
+  color: #666;
+}
+
+.plan-subtitle span {
+  color: #ff6b9d;
+  font-weight: 600;
+}
+
+.plans-container {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  padding: 0 20px;
+  margin-bottom: 40px;
+  position: relative;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.plans-container::-webkit-scrollbar {
+  display: none;
+}
+
+.plan-card {
+  position: relative;
+  border-radius: 25px;
+  overflow: visible;
+  background: white;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  padding-bottom: 15px;
+  min-width: 280px;
+  flex-shrink: 0;
+  scroll-snap-align: center;
+}
+
+.plan-card.most-popular {
+  border: 3px solid #ffd700;
+  box-shadow: 0 12px 40px rgba(255, 215, 0, 0.3);
+}
+
+.popular-badge {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  color: #333;
+  padding: 8px 25px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+  z-index: 10;
+}
+
+.crown-icon {
+  font-size: 14px;
+}
+
+.plan-content {
+  padding: 30px 20px;
+  border-radius: 25px 25px 0 0;
+  color: white;
+}
+
+.plan-name {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.plan-price-box {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 25px;
+  backdrop-filter: blur(10px);
+}
+
+.price-amount {
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+}
+
+.price-period {
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.plan-features-list {
+  margin-bottom: 25px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.check-icon {
+  background: rgba(255, 255, 255, 0.3);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.feature-text {
+  flex: 1;
+}
+
+.buy-now-btn {
+  width: 100%;
+  background: white;
+  color: #667eea;
+  padding: 15px;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.buy-now-btn:hover {
+  transform: translateY(-2px);
+}
+
+.plan-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.book-now-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #5E4DB2 0%, #7C5CDB 100%);
+  color: white;
+  padding: 15px;
+  border: none;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(94, 77, 178, 0.3);
+  transition: transform 0.2s;
+}
+
+.book-now-btn:hover {
+  transform: translateY(-2px);
+}
+
+.buy-again-btn {
+  width: 100%;
+  background: white;
+  color: #667eea;
+  padding: 15px;
+  border: 2px solid #667eea;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.buy-again-btn:hover {
+  background: #f0f0ff;
+  transform: translateY(-2px);
+}
+
+.upgrade-btn-plan {
+  width: 100%;
+  background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%);
+  color: white;
+  padding: 15px;
+  border: none;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(255, 94, 98, 0.3);
+  transition: transform 0.2s;
+}
+
+.upgrade-btn-plan:hover {
+  transform: translateY(-2px);
+}
+
+.plan-description {
+  text-align: center;
+  font-size: 13px;
+  color: #666;
+  padding: 10px 20px 0;
+  font-style: italic;
+}
+
+.water-checkbox-section-plans {
+  width: calc(100% - 40px);
+  background: white;
+  padding: 16px;
+  border-radius: 16px;
+  margin: 20px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.water-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.water-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #5E4DB2;
+}
+
+.water-checkbox-label span {
+  user-select: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .membership-plans {
+    padding: 10px;
+  }
+
+  .plan-main-title {
+    font-size: 20px;
+    margin-bottom: 15px;
+  }
+
+  .plan-main-desc {
+    font-size: 12px;
+    margin-bottom: 15px;
+  }
+
+  .plan-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .plan-card {
+    padding: 15px;
+  }
+
+  .plan-name {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .price-section {
+    margin-bottom: 12px;
+  }
+
+  .price-amount {
+    font-size: 26px;
+    margin-bottom: 4px;
+  }
+
+  .price-period {
+    font-size: 11px;
+  }
+
+  .plan-benefits {
+    margin-bottom: 12px;
+  }
+
+  .benefit-item {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .buy-now-btn {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .plan-description {
+    font-size: 11px;
+    padding: 8px 15px 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .membership-plans {
+    padding: 30px;
+  }
+
+  .plan-main-title {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .plan-main-desc {
+    font-size: 15px;
+    margin-bottom: 30px;
+  }
+
+  .plan-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .plan-card {
+    padding: 25px;
+  }
+
+  .plan-name {
+    font-size: 22px;
+    margin-bottom: 15px;
+  }
+
+  .price-section {
+    margin-bottom: 20px;
+  }
+
+  .price-amount {
+    font-size: 36px;
+    margin-bottom: 5px;
+  }
+
+  .price-period {
+    font-size: 13px;
+  }
+
+  .plan-benefits {
+    margin-bottom: 20px;
+  }
+
+  .benefit-item {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .buy-now-btn {
+    padding: 12px 30px;
+    font-size: 15px;
+  }
+
+  .plan-description {
+    font-size: 13px;
+    padding: 10px 20px 0;
+  }
+}

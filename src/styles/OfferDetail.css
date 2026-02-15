@@ -1,0 +1,365 @@
+.offer-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0 20px;
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.offer-detail-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.back-btn-absolute {
+  position: absolute;
+  left: 0;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px 10px;
+  color: #333;
+}
+
+.offer-detail-card {
+  border-radius: 28px;
+  padding: 32px 22px 26px;
+  margin-bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+  text-align: center;
+  gap: 14px;
+  background-color: #FF9966 !important;
+}
+
+.offer-detail-icon {
+  font-size: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.car-illustration {
+  width: 100%;
+  max-width: 200px;
+  margin: 10px 0;
+}
+
+.car-illustration img {
+  width: 100%;
+  height: auto;
+}
+
+.offer-detail-content {
+  width: 100%;
+}
+
+.offer-detail-type {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 12px 0 8px;
+  line-height: 1.4;
+}
+
+.offer-title {
+  font-size: 14px;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+  line-height: 1.6;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.offer-title-percent {
+  color: #FFFFFF;
+  font-weight: 800;
+  background: #8B4513;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 15px;
+  display: inline-flex;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.5px;
+}
+
+.offer-detail-discount {
+  font-size: 16px;
+  font-weight: 600;
+  color: #b45309;
+  margin: 8px 0 12px;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 6px 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.price-row.highlight {
+  background: rgba(255, 255, 255, 0.45);
+  padding: 12px 14px;
+  border-radius: 14px;
+  margin: 10px 0 4px;
+}
+
+.price-inline {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.price-label {
+  color: #555;
+  font-weight: 500;
+}
+
+.price-value {
+  color: #666;
+  font-weight: 600;
+}
+
+.price-value.strikethrough {
+  text-decoration: line-through;
+  font-size: 13px;
+}
+
+.price-value-big {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.tax-note-inline {
+  font-size: 11px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.water-note {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 7px 12px;
+  margin: 8px auto 6px;
+  display: inline-block;
+}
+
+.offer-title {
+  font-size: 14px;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.offer-title-percent {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.terms-note {
+  font-size: 12px;
+  color: #777;
+  margin: 10px 0 0;
+}
+
+/* Water Checkbox Section */
+.water-checkbox-section {
+  width: 100%;
+  background: white;
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.water-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.water-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #5E4DB2;
+}
+
+.water-checkbox-label span {
+  user-select: none;
+}
+
+/* Action Buttons */
+.offer-detail-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 80px;
+}
+
+.skip-btn {
+  flex: 1;
+  background-color: #f0f0f5;
+  color: #333;
+  padding: 14px;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.skip-btn:hover {
+  background-color: #e8e8f0;
+  border-color: #bbb;
+}
+
+.book-now-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.book-now-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.error-container {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.error-container p {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.error-container button {
+  background-color: #667eea;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .offer-detail-card {
+    padding: 22px 16px;
+    border-radius: 22px;
+    margin-bottom: 18px;
+    gap: 10px;
+  }
+
+  .offer-detail-icon {
+    font-size: 40px;
+  }
+
+  .offer-detail-type {
+    font-size: 20px;
+    margin: 8px 0;
+  }
+
+  .offer-detail-discount {
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+
+  .offer-detail-pricing {
+    padding: 14px;
+    margin: 10px 0;
+  }
+
+  .price-row {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .price-value-big {
+    font-size: 22px;
+  }
+
+  .water-note {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .offer-detail-actions {
+    gap: 10px;
+    margin-bottom: 70px;
+  }
+
+  .skip-btn,
+  .book-now-btn {
+    padding: 12px;
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 768px) {
+  .offer-detail-card {
+    padding: 40px 30px;
+    margin-bottom: 40px;
+  }
+
+  .offer-detail-type {
+    font-size: 26px;
+  }
+
+  .offer-detail-pricing {
+    padding: 25px;
+  }
+
+  .price-value-big {
+    font-size: 32px;
+  }
+
+  .offer-detail-actions {
+    gap: 16px;
+    margin-bottom: 100px;
+  }
+
+  .skip-btn,
+  .book-now-btn {
+    padding: 16px;
+    font-size: 16px;
+  }
+}

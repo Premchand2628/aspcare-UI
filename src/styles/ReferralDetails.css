@@ -1,0 +1,457 @@
+.referral-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: linear-gradient(135deg, #5E4DB2 0%, #7C5CDB 100%);
+  color: white;
+  margin: -20px -20px 20px -20px;
+  position: relative;
+}
+
+.referral-header h1 {
+  font-size: 24px;
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.header-spacer {
+  width: 40px;
+}
+
+/* Benefit Card */
+.benefit-card {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.benefit-icon {
+  font-size: 40px;
+  margin-right: 15px;
+}
+
+.benefit-info {
+  flex: 1;
+}
+
+.benefit-label {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.benefit-amount {
+  margin: 5px 0 0 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1b5e20;
+}
+
+/* Invite Card */
+.invite-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: linear-gradient(135deg, #5E4DB2 0%, #7C5CDB 100%);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  color: white;
+  box-shadow: 0 4px 15px rgba(94, 77, 178, 0.3);
+}
+
+.invite-icon {
+  font-size: 40px;
+  flex-shrink: 0;
+}
+
+.invite-content {
+  flex: 1;
+}
+
+.invite-content h3 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+}
+
+.invite-content p {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+}
+
+.invite-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+  justify-content: center;
+}
+
+.invite-action-btn:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.invite-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.whatsapp-icon-small {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  color: #25D366;
+}
+
+.coupon-display {
+  margin: 10px 0 0 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+/* Referral Count */
+.referral-count {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f9f9f9;
+  padding: 15px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.count-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+}
+
+.count-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: #5E4DB2;
+}
+
+/* Referrals List */
+.referrals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.referral-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 15px;
+  transition: all 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.referral-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #5E4DB2;
+}
+
+.referral-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5E4DB2 0%, #7C5CDB 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.referral-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.referral-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.referral-phone {
+  margin: 3px 0 0 0;
+  font-size: 13px;
+  color: #999;
+}
+
+.referral-date {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #bbb;
+}
+
+.referral-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.status-badge {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-completed {
+  background-color: #e6f4ea;
+  color: #1b5e20;
+  border: 1px solid #c8e6c9;
+}
+
+.status-pending {
+  background-color: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffe0b2;
+}
+
+.referral-benefit {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1b5e20;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px 40px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  color: #333;
+  margin: 0 0 10px 0;
+  font-weight: 700;
+}
+
+.empty-state p {
+  font-size: 14px;
+  color: #999;
+  margin: 0 0 30px 0;
+}
+
+.invite-btn {
+  background-color: #5E4DB2;
+  color: white;
+  padding: 14px 40px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.invite-btn:hover {
+  background-color: #4a3d8a;
+}
+
+.coupon-display-empty {
+  margin-top: 15px;
+  font-size: 13px;
+  color: #5E4DB2;
+  font-weight: 600;
+}
+
+/* Info Section */
+.referral-info-section {
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.referral-info-section h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+}
+
+.info-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5E4DB2 0%, #7C5CDB 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.step p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+  padding-top: 4px;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .referral-header {
+    padding: 15px;
+    margin: -20px -20px 15px -20px;
+  }
+
+  .referral-header h1 {
+    font-size: 20px;
+  }
+
+  .back-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
+  .header-spacer {
+    width: 36px;
+  }
+
+  .benefit-card {
+    padding: 15px;
+  }
+
+  .benefit-icon {
+    font-size: 32px;
+    margin-right: 12px;
+  }
+
+  .benefit-amount {
+    font-size: 28px;
+  }
+
+  .referral-card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .referral-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .referral-name {
+    font-size: 14px;
+  }
+
+  .referral-benefit {
+    font-size: 14px;
+  }
+
+  .empty-icon {
+    font-size: 60px;
+    margin-bottom: 15px;
+  }
+
+  .empty-state h3 {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 600px) {
+  .referrals-list {
+    gap: 15px;
+  }
+
+  .benefit-card {
+    padding: 25px;
+  }
+}

@@ -1,0 +1,711 @@
+.order-header {
+  margin-bottom: 25px;
+}
+
+.order-header h1 {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.order-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.order-title-row h2 {
+  font-size: 20px;
+  color: #333;
+  font-weight: 700;
+}
+
+/* Service Card */
+.order-service-card {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.service-detail-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 10px;
+  object-fit: cover;
+  background-color: #e0e0e0;
+}
+
+.service-detail-info {
+  flex: 1;
+}
+
+.service-detail-info h3 {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.location {
+  font-size: 14px;
+  color: #666;
+}
+
+/* Booking Info */
+.order-booking-info {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.booking-time {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+
+/* Action Buttons */
+.order-actions-main {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.reschedule-btn-main {
+  flex: 1;
+  background-color: #FF8C00;
+  color: white;
+  padding: 15px;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cancel-btn {
+  flex: 1;
+  background-color: #ff4444;
+  color: white;
+  padding: 15px;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.download-btn {
+  width: 100%;
+  background-color: #5E4DB2;
+  color: white;
+  padding: 18px;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 15px rgba(94, 77, 178, 0.3);
+}
+
+/* Price Breakdown */
+.order-price-breakdown {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .order-header {
+    margin-bottom: 15px;
+  }
+
+  .order-header h1 {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  .order-title-row {
+    margin-bottom: 12px;
+  }
+
+  .order-title-row h2 {
+    font-size: 16px;
+  }
+
+  .order-service-card {
+    gap: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+  }
+
+  .service-detail-image {
+    width: 70px;
+    height: 70px;
+    border-radius: 8px;
+  }
+
+  .service-detail-info h3 {
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .location {
+    font-size: 12px;
+  }
+
+  .order-booking-info {
+    margin-bottom: 12px;
+  }
+
+  .booking-time {
+    font-size: 14px;
+  }
+
+  .order-actions-main {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .reschedule-btn-main {
+    padding: 12px;
+    font-size: 13px;
+    border-radius: 12px;
+  }
+
+  .cancel-btn-main {
+    padding: 12px;
+    font-size: 13px;
+    border-radius: 12px;
+  }
+
+  .order-price-breakdown {
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 12px;
+  }
+
+  .order-price-row {
+    font-size: 12px;
+    padding: 6px 0;
+  }
+
+  .continue-booking-btn {
+    padding: 12px;
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+}
+
+@media (min-width: 768px) {
+  .order-header {
+    margin-bottom: 30px;
+  }
+
+  .order-header h1 {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .order-title-row {
+    margin-bottom: 15px;
+  }
+
+  .order-title-row h2 {
+    font-size: 22px;
+  }
+
+  .order-service-card {
+    gap: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 15px;
+  }
+
+  .service-detail-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+  }
+
+  .service-detail-info h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+
+  .location {
+    font-size: 15px;
+  }
+
+  .order-booking-info {
+    margin-bottom: 25px;
+  }
+
+  .booking-time {
+    font-size: 18px;
+  }
+
+  .order-actions-main {
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .reschedule-btn-main {
+    padding: 15px;
+    font-size: 15px;
+    border-radius: 15px;
+  }
+
+  .cancel-btn-main {
+    padding: 15px;
+    font-size: 15px;
+    border-radius: 15px;
+  }
+
+  .order-price-breakdown {
+    padding: 25px;
+    margin-bottom: 25px;
+    border-radius: 15px;
+  }
+
+  .order-price-row {
+    font-size: 15px;
+    padding: 8px 0;
+  }
+
+  .continue-booking-btn {
+    padding: 18px;
+    font-size: 16px;
+    margin-bottom: 30px;
+  }
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 1000;
+  animation: slideInOverlay 0.3s ease;
+}
+
+@keyframes slideInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Cancel Popup */
+.cancel-popup {
+  background: white;
+  width: 100%;
+  max-height: 90vh;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  gap: 10px;
+}
+
+.popup-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.popup-back-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-spacer {
+  width: 40px;
+}
+
+.popup-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.cancel-ineligible {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.ineligible-icon {
+  font-size: 60px;
+  margin-bottom: 15px;
+}
+
+.ineligible-message {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.cancel-eligible {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.refund-card {
+  background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+}
+
+.refund-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 16px 0;
+}
+
+.refund-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.refund-item.total {
+  border-bottom: none;
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.refund-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 600;
+}
+
+.refund-value {
+  font-size: 13px;
+  color: #333;
+  font-weight: 700;
+}
+
+.refund-value-total {
+  font-size: 18px;
+  color: #1b5e20;
+  font-weight: 800;
+}
+
+.refund-divider {
+  height: 1px;
+  background: #f0f0f0;
+  margin: 12px 0;
+}
+
+.refund-message {
+  font-size: 12px;
+  color: #666;
+  margin: 16px 0 0 0;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.popup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 20px;
+}
+
+.cancel-confirm-btn {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cancel-confirm-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+}
+
+.cancel-confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .modal-overlay {
+    align-items: stretch;
+  }
+
+  .cancel-popup {
+    max-height: 100%;
+  }
+
+  .refund-card {
+    padding: 16px;
+  }
+
+  .refund-item {
+    font-size: 12px;
+  }
+}
+
+/* Cancelled Badge */
+.cancelled-badge-detail {
+  background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 14px;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(198, 40, 40, 0.3);
+}
+
+.cancelled-icon {
+  font-size: 28px;
+}
+
+.cancelled-text {
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Reschedule Popup */
+.reschedule-popup {
+  background: white;
+  width: 100%;
+  max-height: 90vh;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+.reschedule-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.date-input {
+  padding: 14px;
+  font-size: 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  background: white;
+  color: #333;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #5E4DB2;
+  box-shadow: 0 0 0 3px rgba(94, 77, 178, 0.1);
+}
+
+.loading-slots {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.slot-btn {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.slot-btn:not(:disabled):hover {
+  border-color: #5E4DB2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(94, 77, 178, 0.2);
+}
+
+.slot-btn.slot-selected {
+  background: linear-gradient(135deg, #5E4DB2 0%, #7C5CDB 100%);
+  border-color: #5E4DB2;
+  color: white;
+}
+
+.slot-btn.slot-booked {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.slot-time {
+  font-size: 14px;
+  font-weight: 700;
+  color: inherit;
+}
+
+.slot-selected .slot-time {
+  color: white;
+}
+
+.slot-status {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+}
+
+.slot-selected .slot-status {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.slot-booked .slot-status {
+  color: #c62828;
+}
+
+.update-booking-btn {
+  background: linear-gradient(135deg, #5E4DB2 0%, #7C5CDB 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+}
+
+.update-booking-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(94, 77, 178, 0.3);
+}
+
+.update-booking-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Reschedule Reason Input */
+.reason-input {
+  padding: 12px;
+  font-size: 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  background: white;
+  color: #333;
+  font-family: inherit;
+  resize: vertical;
+  transition: all 0.3s ease;
+  line-height: 1.5;
+}
+
+.reason-input:focus {
+  outline: none;
+  border-color: #5E4DB2;
+  box-shadow: 0 0 0 3px rgba(94, 77, 178, 0.1);
+}
+
+.reason-input::placeholder {
+  color: #999;
+}
+
+.char-count {
+  font-size: 12px;
+  color: #999;
+  text-align: right;
+  margin-top: -5px;
+}
+
+@media (max-width: 768px) {
+  .slots-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .slot-btn {
+    padding: 12px 10px;
+  }
+}

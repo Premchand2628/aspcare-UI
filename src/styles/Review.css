@@ -1,0 +1,390 @@
+.service-info-card {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.service-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  object-fit: cover;
+  background-color: #e0e0e0;
+}
+
+.service-details {
+  flex: 1;
+}
+
+.service-name {
+  font-size: 18px;
+  color: #4FC3F7;
+  margin-bottom: 5px;
+}
+
+.service-location {
+  font-size: 14px;
+  color: #666;
+}
+
+/* Booking Info */
+.booking-info {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+
+.booking-row {
+  display: grid;
+  grid-template-columns: 140px 12px 1fr;
+  align-items: center;
+  column-gap: 8px;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.booking-row:last-child {
+  margin-bottom: 0;
+}
+
+.booking-label {
+  font-weight: 600;
+  color: #2b2b2b;
+}
+
+.booking-separator {
+  color: #666;
+  text-align: center;
+}
+
+.booking-value {
+  font-weight: 500;
+}
+
+.washer-info {
+  color: #666 !important;
+  font-style: italic;
+}
+
+/* Promo Section */
+.promo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.promo-code-input {
+  flex: 1;
+  background-color: white;
+  color: #333;
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  border: 2px solid #5E4DB2;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.promo-code-input:focus {
+  border-color: #7C5CDB;
+}
+
+.promo-code-input:disabled {
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.promo-code-input::placeholder {
+  color: #999;
+}
+
+.promo-message {
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 0;
+  text-align: center;
+}
+
+.promo-message.error {
+  background-color: #ffe6e6;
+  color: #d32f2f;
+  border: 1px solid #ffcdd2;
+}
+
+.promo-message.success {
+  background-color: #e6f4ea;
+  color: #1b5e20;
+  border: 1px solid #c8e6c9;
+}
+
+.promo-code-input-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.promo-code-input-wrapper input {
+  flex: 1;
+}
+
+.apply-btn-small {
+  background-color: #5E4DB2;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.3s;
+  width: 100%;
+}
+
+.apply-btn-small:hover:not(:disabled) {
+  background-color: #4a3d8a;
+}
+
+.apply-btn-small:disabled {
+  background-color: #bbb;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.remove-btn-small {
+  background-color: #FF6B6B;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.3s;
+  width: 100%;
+}
+
+.remove-btn-small:hover {
+  background-color: #FF5252;
+}
+  font-weight: 600;
+}
+
+/* Price Breakdown */
+.price-breakdown {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #333;
+}
+
+.price-row:last-child {
+  margin-bottom: 0;
+}
+
+.price-divider {
+  height: 1px;
+  background-color: #ddd;
+  margin: 15px 0;
+}
+
+.price-row.total {
+  font-size: 16px;
+  margin-top: 5px;
+}
+
+.price-row.discount-row {
+  color: #1B8A3E;
+  font-weight: 600;
+}
+
+.price-row.discount-row span:last-child {
+  color: #1B8A3E;
+}
+
+/* Savings Message */
+.savings-message {
+  background: linear-gradient(135deg, #FFD700 0%, #FFC700 100%);
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin-top: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+/* Continue Button */
+.continue-btn {
+  width: 100%;
+  background-color: #5E4DB2;
+  color: white;
+  padding: 18px;
+  border-radius: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 50px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(94, 77, 178, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .service-info-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .service-image {
+    width: 70px;
+    height: 70px;
+  }
+
+  .service-name {
+    font-size: 16px;
+  }
+
+  .service-location {
+    font-size: 12px;
+  }
+
+  .booking-info {
+    padding: 15px;
+  }
+
+  .booking-row {
+    grid-template-columns: 110px 12px 1fr;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .booking-label {
+    font-size: 13px;
+  }
+
+  .promo-section {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .promo-code-input {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .apply-btn-small,
+  .remove-btn-small {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .price-breakdown {
+    padding: 15px;
+  }
+
+  .price-row {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .price-row.total {
+    font-size: 15px;
+  }
+
+  .savings-message {
+    padding: 12px;
+    font-size: 14px;
+    margin-top: 20px;
+    margin-bottom: 25px;
+  }
+
+  .continue-btn {
+    padding: 15px;
+    font-size: 15px;
+    margin-top: 40px;
+    margin-bottom: 15px;
+  }
+}
+
+@media (min-width: 768px) {
+  .service-info-card {
+    padding: 20px;
+  }
+
+  .service-image {
+    width: 100px;
+    height: 100px;
+  }
+
+  .service-name {
+    font-size: 20px;
+  }
+
+  .service-location {
+    font-size: 15px;
+  }
+
+  .booking-info {
+    padding: 25px;
+  }
+
+  .booking-row {
+    grid-template-columns: 160px 12px 1fr;
+    font-size: 15px;
+  }
+
+  .promo-section {
+    flex-direction: row;
+    gap: 12px;
+    align-items: flex-end;
+  }
+
+  .promo-code-input {
+    flex: 1;
+  }
+
+  .apply-btn-small,
+  .remove-btn-small {
+    padding: 15px 30px;
+  }
+
+  .price-row {
+    font-size: 15px;
+  }
+
+  .price-row.total {
+    font-size: 17px;
+  }
+
+  .continue-btn {
+    padding: 20px;
+    font-size: 17px;
+    margin-top: 60px;
+    margin-bottom: 25px;
+  }
+}

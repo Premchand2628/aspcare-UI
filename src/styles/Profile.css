@@ -1,0 +1,270 @@
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.profile-header h1 {
+  font-size: 24px;
+  color: #333;
+  font-weight: 700;
+}
+
+.avatar-large {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid #5E4DB2;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+}
+
+.avatar-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* User Card */
+.user-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.user-name {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.user-name h2 {
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.edit-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 10px;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.drops-earned {
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 15px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.drops-icon {
+  font-size: 24px;
+}
+
+.drops-label {
+  flex: 1;
+  color: white;
+  font-size: 14px;
+}
+
+.drops-count {
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Rewards Section */
+.rewards-section {
+  margin-bottom: 25px;
+}
+
+.rewards-section h3 {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.rewards-icons {
+  display: flex;
+  gap: 20px;
+}
+
+.reward-icon {
+  width: 100px;
+  height: 100px;
+  background-color: #f9f9f9;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.reward-icon img {
+  width: 60px;
+  height: 60px;
+}
+
+/* Menu Section */
+.menu-section {
+  margin-bottom: 25px;
+}
+
+.menu-section h3 {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.menu-item:hover {
+  background-color: #f0f0f0;
+  transform: translateX(5px);
+}
+
+.menu-icon {
+  font-size: 20px;
+  width: 30px;
+  text-align: center;
+}
+
+.menu-label {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+
+.menu-arrow {
+  font-size: 18px;
+  color: #999;
+}
+/* Responsive */
+@media (max-width: 480px) {
+  .profile-header {
+    margin-bottom: 15px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .profile-header h1 {
+    font-size: 20px;
+  }
+
+  .avatar-large {
+    width: 50px;
+    height: 50px;
+    border-width: 2px;
+  }
+
+  .user-card {
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 15px;
+  }
+
+  .user-name h2 {
+    font-size: 18px;
+  }
+
+  .user-phone {
+    font-size: 12px;
+  }
+
+  .menu-item {
+    padding: 12px;
+  }
+
+  .menu-icon {
+    font-size: 16px;
+    width: 24px;
+  }
+
+  .menu-label {
+    font-size: 12px;
+  }
+
+  .menu-arrow {
+    font-size: 14px;
+  }
+
+  .logout-btn {
+    padding: 12px;
+    font-size: 14px;
+    margin-top: 15px;
+  }
+}
+
+@media (min-width: 768px) {
+  .profile-header {
+    margin-bottom: 25px;
+  }
+
+  .profile-header h1 {
+    font-size: 28px;
+  }
+
+  .avatar-large {
+    width: 70px;
+    height: 70px;
+  }
+
+  .user-card {
+    padding: 30px;
+    margin-bottom: 30px;
+  }
+
+  .user-name h2 {
+    font-size: 26px;
+  }
+
+  .user-phone {
+    font-size: 14px;
+  }
+
+  .menu-item {
+    padding: 15px;
+  }
+
+  .menu-icon {
+    font-size: 22px;
+  }
+
+  .menu-label {
+    font-size: 16px;
+  }
+
+  .menu-arrow {
+    font-size: 20px;
+  }
+
+  .logout-btn {
+    padding: 15px;
+    font-size: 16px;
+    margin-top: 25px;
+  }
+}
