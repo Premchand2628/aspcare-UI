@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import '../styles/Login.css';
 
 function Login() {
@@ -62,6 +63,58 @@ function Login() {
     // Handle login logic
     console.log('Logging in with:', email, password);
     navigate('/');
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setLoading(true);
+      setError('');
+
+      // Send Google token to your backend for verification
+      const response = await fetch('/auth/login/google', {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          googleToken: credentialResponse.credential
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const token = data.data?.token || data.token || data.jwt || '';
+        const phone = data.data?.phone || '';
+        const firstName = data.data?.firstName || '';
+
+        if (token) {
+          localStorage.setItem('authToken', token);
+        }
+        if (phone) {
+          localStorage.setItem('userPhone', phone);
+        }
+        if (firstName) {
+          localStorage.setItem('userFirstName', firstName);
+        }
+
+        console.log('Google login successful');
+        navigate('/');
+      } else {
+        setError(data.message || 'Google login failed. Please try again.');
+      }
+    } catch (err) {
+      setError('Network error with Google login. Please try again.');
+      console.error('Google Login Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google login failed. Please try again.');
   };
 
   const handleVerifyOTP = async () => {
@@ -147,6 +200,23 @@ function Login() {
         {/* Login Form */}
         {authMode === 'login' && (
           <>
+            {/* Google Login Button */}
+            <div className="google-login-section">
+              <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  theme="outlined"
+                  size="large"
+                  width="100%"
+                  text="signin"
+                />
+              </GoogleOAuthProvider>
+              <div className="divider">
+                <span>OR</span>
+              </div>
+            </div>
+
             {/* Login Method Toggle */}
             <div className="login-method-toggle">
               <button
