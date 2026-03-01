@@ -17,13 +17,14 @@ const Booking = () => {
   const mapRef = React.useRef(null);
   const mapInstanceRef = React.useRef(null);
   const markerRef = React.useRef(null);
+  const dateInputRef = React.useRef(null);
   
   // Calendar and time slot states
   const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date('2026-01-18'));
+  const [selectedDate, setSelectedDate] = useState(null);
   const [showTimeSlots, setShowTimeSlots] = useState(false);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState('09:00-10:00');
-  const [availability, setAvailability] = useState({});
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
+  const [availability, setAvailability] = useState(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [vehicleNumberError, setVehicleNumberError] = useState('');
@@ -41,8 +42,18 @@ const Booking = () => {
   ];
 
   const formatDate = (date) => {
+    if (!date) return '';
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  const formatDateWithMonth = (date) => {
+    if (!date) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const month = months[date.getMonth()];
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
   };
@@ -54,17 +65,101 @@ const Booking = () => {
     return `${year}-${month}-${day}`;
   };
 
+  const resolveServiceType = () => {
+    const raw = location.state?.serviceType
+      || selectedCentre?.serviceType
+      || selectedCentre?.service_type
+      || selectedCentre?.service
+      || 'HOME';
+    return String(raw).trim().toUpperCase();
+  };
+
+  const parseLocalDate = (value) => {
+    if (!value) return null;
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const handleDateSelect = (date) => {
+    if (!date) return;
     setSelectedDate(date);
     setSelectedTimeSlot('');
     setShowCalendar(false);
     setShowTimeSlots(true);
-    fetchAvailability(date, selectedCentre?.serviceType || 'HOME');
+    fetchAvailability(date, resolveServiceType());
   };
 
   const handleTimeSlotSelect = (slot) => {
     setSelectedTimeSlot(slot);
     setShowTimeSlots(false);
+  };
+
+  const normalizeAvailability = (data) => {
+    const base = Object.fromEntries(timeSlots.map((slot) => [slot, true]));
+
+    if (!data) return base;
+
+    if (Array.isArray(data)) {
+      if (data.length === 0) return base;
+
+      if (typeof data[0] === 'string') {
+        data.forEach((slot) => {
+          if (slot in base) base[slot] = false;
+        });
+        return base;
+      }
+
+      if (typeof data[0] === 'object' && data[0] !== null) {
+        data.forEach((item) => {
+          const slot = item.timeSlot || item.slot || item.time || item.startTime;
+          if (!slot || !(slot in base)) return;
+          if (typeof item.available === 'boolean') {
+            base[slot] = item.available;
+          } else if (typeof item.isAvailable === 'boolean') {
+            base[slot] = item.isAvailable;
+          } else if (typeof item.booked === 'boolean') {
+            base[slot] = !item.booked;
+          } else {
+            base[slot] = false;
+          }
+        });
+        return base;
+      }
+
+      return base;
+    }
+
+    if (typeof data === 'object') {
+      if (Array.isArray(data.bookedSlots)) {
+        data.bookedSlots.forEach((slot) => {
+          if (slot in base) base[slot] = false;
+        });
+        return base;
+      }
+
+      if (Array.isArray(data.availableSlots)) {
+        const allFalse = Object.fromEntries(timeSlots.map((slot) => [slot, false]));
+        data.availableSlots.forEach((slot) => {
+          if (slot in allFalse) allFalse[slot] = true;
+        });
+        return allFalse;
+      }
+
+      const keys = Object.keys(data);
+      if (keys.length) {
+        keys.forEach((slot) => {
+          if (slot in base) base[slot] = Boolean(data[slot]);
+        });
+        return base;
+      }
+    }
+
+    return base;
+  };
+
+  const handleEditDate = () => {
+    setShowTimeSlots(false);
+    setShowCalendar(true);
   };
 
   const fetchAvailability = async (date, serviceType) => {
@@ -86,14 +181,14 @@ const Booking = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setAvailability(data || {});
+        setAvailability(normalizeAvailability(data));
         return;
       }
 
-      setAvailability({});
+      setAvailability(null);
     } catch (error) {
       console.error('Error fetching availability:', error);
-      setAvailability({});
+      setAvailability(null);
     } finally {
       setLoadingSlots(false);
     }
@@ -105,6 +200,17 @@ const Booking = () => {
       requestLocationPermission();
     }
   }, []);
+
+  useEffect(() => {
+    if (!showCalendar) return;
+    const timer = setTimeout(() => {
+      if (dateInputRef.current?.showPicker) {
+        dateInputRef.current.showPicker();
+      }
+      dateInputRef.current?.focus?.();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [showCalendar]);
 
   // Populate address and map if centre is selected from SelectCenter page
   useEffect(() => {
@@ -363,9 +469,9 @@ const Booking = () => {
     }
   };
 
-  const slotsToRender = Object.keys(availability).length
+  const slotsToRender = availability
     ? Object.entries(availability)
-    : timeSlots.map((slot) => [slot, true]);
+    : timeSlots.map((slot) => [slot, false]);
 
   return (
     <div className="page-container">
@@ -413,7 +519,11 @@ const Booking = () => {
           </div>
           <div className="booking-schedule">
             <span className="schedule-icon">📅</span>
-            <span>Schedule: {formatDate(selectedDate)} {selectedTimeSlot}</span>
+            <span>
+              Schedule: {selectedDate && selectedTimeSlot
+                ? `${formatDate(selectedDate)} ${selectedTimeSlot}`
+                : 'Select date and time'}
+            </span>
           </div>
           <div className="booking-wash-type">
             <span className="wash-icon">🧼</span>
@@ -427,7 +537,6 @@ const Booking = () => {
               <option>Basic</option>
               <option>Premium</option>
             </select>
-            <span>Free left: 1</span>
           </div>
           <button className="points-badge" onClick={() => setShowCalendar(true)}>📅</button>
         </div>
@@ -439,10 +548,12 @@ const Booking = () => {
               <h3>Select Date</h3>
               <input 
                 type="date" 
-                value={selectedDate.toISOString().split('T')[0]}
-                onChange={(e) => handleDateSelect(new Date(e.target.value))}
+                value={selectedDate ? formatDateForApi(selectedDate) : ''}
+                onChange={(e) => handleDateSelect(parseLocalDate(e.target.value))}
+                onClick={() => dateInputRef.current?.showPicker?.()}
                 className="date-input"
                 min={new Date().toISOString().split('T')[0]}
+                ref={dateInputRef}
               />
               <button className="close-modal-btn" onClick={() => setShowCalendar(false)}>Close</button>
             </div>
@@ -454,6 +565,12 @@ const Booking = () => {
           <div className="modal-overlay" onClick={() => setShowTimeSlots(false)}>
             <div className="timeslot-modal" onClick={(e) => e.stopPropagation()}>
               <h3>Select Time Slot</h3>
+              {selectedDate && (
+                <div className="selected-date-row">
+                  <span className="selected-date-label">Selected date: {formatDateWithMonth(selectedDate)}</span>
+                  <button type="button" className="edit-date-btn" onClick={handleEditDate}>Edit date?</button>
+                </div>
+              )}
               {loadingSlots ? (
                 <p className="timeslots-loading">Loading available slots...</p>
               ) : (
@@ -555,6 +672,14 @@ const Booking = () => {
         )}
 
         <button className="review-btn" onClick={() => {
+          if (!selectedDate) {
+            setVehicleNumberError('Please select a date');
+            return;
+          }
+          if (!selectedTimeSlot) {
+            setVehicleNumberError('Please select a time slot');
+            return;
+          }
           if (!vehicleNumber.trim()) {
             setVehicleNumberError('Vehicle number is required');
             return;

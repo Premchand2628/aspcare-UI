@@ -20,9 +20,13 @@ const Orders = () => {
   }, []);
 
   const fetchOrders = async () => {
-    // Get phone number from localStorage (stored during login)
-    const phoneNumber = localStorage.getItem('userPhone') || '9010340125';
     const authToken = localStorage.getItem('authToken');
+    
+    if (!authToken) {
+      setError('User not properly authenticated. Please login again.');
+      setLoading(false);
+      return;
+    }
     
     try {
       const headers = {
@@ -35,7 +39,7 @@ const Orders = () => {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(`/bookings/by-phone?phone=${phoneNumber}`, {
+      const response = await fetch('/bookings/me', {
         method: 'GET',
         mode: 'cors',
         headers: headers

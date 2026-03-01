@@ -84,13 +84,11 @@ const MembershipPlans = () => {
 
   const fetchActiveMembership = async () => {
     try {
-      const phone = localStorage.getItem('userPhone');
-      if (!phone) {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
         setLoadingMembership(false);
         return;
       }
-
-      const authToken = localStorage.getItem('authToken');
       const headers = {
         'Accept': 'application/json'
       };
@@ -98,7 +96,7 @@ const MembershipPlans = () => {
         headers.Authorization = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(`/memberships/active/by-phone?phone=${phone}`, {
+      const response = await fetch('/memberships/active/me', {
         method: 'GET',
         headers
       });

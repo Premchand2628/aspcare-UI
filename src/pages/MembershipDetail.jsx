@@ -16,14 +16,11 @@ const MembershipDetail = () => {
 
   const fetchMembershipDetails = async () => {
     try {
-      const phone = localStorage.getItem('userPhone');
-      
-      if (!phone) {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
         navigate('/login');
         return;
       }
-
-      const authToken = localStorage.getItem('authToken');
       const headers = {
         'Accept': 'application/json'
       };
@@ -33,7 +30,7 @@ const MembershipDetail = () => {
       }
 
       // Always try to get the active membership first
-      const response = await fetch(`/memberships/active/by-phone?phone=${phone}`, {
+      const response = await fetch('/memberships/active/me', {
         method: 'GET',
         headers: headers
       });
@@ -52,7 +49,7 @@ const MembershipDetail = () => {
 
       // Fetch ALL memberships for payment history
       try {
-        const allResponse = await fetch(`/memberships/by-phone?phone=${phone}`, {
+        const allResponse = await fetch('/memberships/me', {
           method: 'GET',
           headers: headers
         });
@@ -266,7 +263,6 @@ const MembershipDetail = () => {
         <button 
           onClick={() => navigate('/membership-plans')}
           style={{
-            width: '100%',
             background: '#5E4DB2',
             color: 'white',
             padding: '16px',

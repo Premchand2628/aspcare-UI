@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/SelectCenter.css';
 
 const SelectCenter = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const serviceType = location.state?.serviceType || 'SELF_DRIVE';
   const [areas, setAreas] = useState([]);
   const [selectedArea, setSelectedArea] = useState('');
   const [centres, setCentres] = useState([]);
@@ -84,7 +86,7 @@ const SelectCenter = () => {
   const handleSelectCentre = (centre) => {
     setSelectedCentre(centre);
     // You can navigate with centre data if needed
-    navigate('/booking', { state: { selectedCentre: centre } });
+    navigate('/booking', { state: { selectedCentre: centre, serviceType } });
   };
 
   return (
@@ -151,7 +153,7 @@ const SelectCenter = () => {
 
       {/* Select Button */}
       {selectedCentre && (
-        <button className="select-center-btn" onClick={() => navigate('/booking', { state: { selectedCentre } })}>
+        <button className="select-center-btn" onClick={() => navigate('/booking', { state: { selectedCentre, serviceType } })}>
           Continue with {selectedCentre.name}
         </button>
       )}

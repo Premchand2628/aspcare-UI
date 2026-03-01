@@ -16,6 +16,10 @@ const Review = () => {
   const [signupBonus, setSignupBonus] = useState(0);
   const [hasExistingBookings, setHasExistingBookings] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneLoading, setPhoneLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
 
   // Get data from booking page
   const bookingData = location.state || {
@@ -52,9 +56,8 @@ const Review = () => {
         const phoneNumber = localStorage.getItem('userPhone');
         
         if (!phoneNumber) {
-          // If no phone number, assume new user and show signup bonus
-          setHasExistingBookings(false);
-          setSignupBonus(20);
+          // If no phone number, show modal to ask for it
+          setShowPhoneModal(true);
           return;
         }
 
@@ -64,10 +67,15 @@ const Review = () => {
         };
         if (authToken) {
           headers.Authorization = `Bearer ${authToken}`;
+        } else {
+          setHasExistingBookings(false);
+          setSignupBonus(20);
+          setLoading(false);
+          return;
         }
 
         // Check if user has any existing bookings
-        const response = await fetch(`/bookings/by-phone?phone=${phoneNumber}`, {
+        const response = await fetch('/bookings/me', {
           method: 'GET',
           headers
         });
@@ -102,6 +110,72 @@ const Review = () => {
     checkExistingBookings();
   }, []);
 
+  // Handle phone number submission from modal
+  const handlePhoneSubmit = async () => {
+    setPhoneError('');
+    const trimmedPhone = phoneInput.trim();
+
+    // Validation
+    if (!trimmedPhone) {
+      setPhoneError('Phone number is required');
+      return;
+    }
+
+    if (!/^\d{10}$/.test(trimmedPhone)) {
+      setPhoneError('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    setPhoneLoading(true);
+    try {
+      const email = localStorage.getItem('userEmail');
+      const authToken = localStorage.getItem('authToken');
+      
+      const headers = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      };
+      if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+      }
+
+      // Update user profile with phone number
+      const response = await fetch('/users/update-phone', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          email,
+          phone: trimmedPhone
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to update phone number');
+      }
+
+      const data = await response.json().catch(() => null);
+      if (data?.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+
+      // Store phone in localStorage
+      localStorage.setItem('userPhone', trimmedPhone);
+      
+      // Close modal and reload data
+      setShowPhoneModal(false);
+      setPhoneInput('');
+      
+      // Trigger a reload of bookings and membership data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating phone:', error);
+      setPhoneError(error.message || 'Failed to update phone number. Please try again.');
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
   // Fetch active membership and calculate discount
   useEffect(() => {
     const fetchActiveMembership = async () => {
@@ -119,9 +193,13 @@ const Review = () => {
         };
         if (authToken) {
           headers.Authorization = `Bearer ${authToken}`;
+        } else {
+          setMembershipDiscount(0);
+          setMembershipDiscountPercent(0);
+          return;
         }
 
-        const response = await fetch(`/memberships/active/by-phone?phone=${phone}`, {
+        const response = await fetch('/memberships/active/me', {
           method: 'GET',
           headers
         });
@@ -221,22 +299,46 @@ const Review = () => {
   const savings = (bookingData.subTotal || 0) - Math.max(0, grandTotal);
 
   return (
-    <div className="page-container">
-      {/* Header */}
-      <header className="header">
-        <button className="back-btn-inline" onClick={() => navigate(-1)}>←</button>
-        <div className="user-info">
-          <div className="avatar">
-            <img src="/images/user-avatar.png" alt="User" />
+    <div className="page-container review-page">
+      {/* Phone Modal for Google OAuth Users */}
+      {showPhoneModal && (
+        <div className="phone-modal-overlay">
+          <div className="phone-modal">
+            <h2>Add Your Phone Number</h2>
+            <p className="modal-subtitle">We need your phone number to fetch your membership details and booking history</p>
+            
+            <input
+              type="tel"
+              placeholder="Enter 10-digit phone number"
+              value={phoneInput}
+              onChange={(e) => {
+                setPhoneInput(e.target.value);
+                setPhoneError('');
+              }}
+              maxLength="10"
+              pattern="\d{10}"
+              className="phone-input"
+              disabled={phoneLoading}
+            />
+            
+            {phoneError && <p className="phone-error">{phoneError}</p>}
+            
+            <button
+              className="phone-submit-btn"
+              onClick={handlePhoneSubmit}
+              disabled={phoneLoading || !phoneInput.trim()}
+            >
+              {phoneLoading ? 'Updating...' : 'Continue'}
+            </button>
           </div>
-          <span className="tier-badge">Good Afternoon, <span className="username">Premchand</span></span>
         </div>
-      </header>
+      )}
 
-      {/* Greeting */}
-      <div className="greeting">
-        <h1>Please review the details</h1>
-      </div>
+      {/* Header */}
+      <header className="header review-header">
+        <button className="back-btn-inline" onClick={() => navigate('/booking')}>←</button>
+        <h1 className="review-title">Please review the details</h1>
+      </header>
 
       {/* Service Info */}
       <div className="service-info-card">

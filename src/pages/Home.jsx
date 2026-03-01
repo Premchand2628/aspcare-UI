@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import '../styles/Home.css';
@@ -20,8 +20,11 @@ const Home = () => {
   const [greeting, setGreeting] = useState('Good Morning');
   const [firstName, setFirstName] = useState('User');
   const [hasBookings, setHasBookings] = useState(true);
+  const didFetchRef = useRef(false);
 
   useEffect(() => {
+    if (didFetchRef.current) return;
+    didFetchRef.current = true;
     fetchActiveMembership();
     fetchUpcomingBookings();
     fetchUserGreeting();
@@ -29,13 +32,11 @@ const Home = () => {
 
   const fetchActiveMembership = async () => {
     try {
-      const phone = localStorage.getItem('userPhone');
-      if (!phone) {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
         setLoading(false);
         return;
       }
-
-      const authToken = localStorage.getItem('authToken');
       const headers = {
         'Accept': 'application/json'
       };
@@ -43,7 +44,7 @@ const Home = () => {
         headers.Authorization = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(`/memberships/active/by-phone?phone=${phone}`, {
+      const response = await fetch('/memberships/active/me', {
         method: 'GET',
         headers
       });
@@ -82,10 +83,8 @@ const Home = () => {
 
   const fetchUpcomingBookings = async () => {
     try {
-      const phone = localStorage.getItem('userPhone');
-      if (!phone) return;
-
       const authToken = localStorage.getItem('authToken');
+      if (!authToken) return;
       const headers = {
         'Accept': 'application/json'
       };
@@ -93,7 +92,7 @@ const Home = () => {
         headers.Authorization = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(`/bookings/by-phone?phone=${phone}`, {
+      const response = await fetch('/bookings/me', {
         method: 'GET',
         headers
       });
@@ -145,18 +144,17 @@ const Home = () => {
 
   const fetchUserGreeting = async () => {
     try {
-      const phone = localStorage.getItem('userPhone');
-      if (!phone) return;
-
       const authToken = localStorage.getItem('authToken');
       const headers = {
         'Accept': 'application/json'
       };
       if (authToken) {
         headers.Authorization = `Bearer ${authToken}`;
+      } else {
+        return;
       }
 
-      const response = await fetch(`/users/greeting?phone=${phone}`, {
+      const response = await fetch('/users/greeting', {
         method: 'GET',
         headers
       });

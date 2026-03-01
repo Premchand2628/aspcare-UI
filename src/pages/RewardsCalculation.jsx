@@ -49,8 +49,11 @@ const RewardsCalculation = () => {
 
   const fetchOrders = async () => {
     try {
-      const phone = localStorage.getItem('userPhone');
       const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        setLoading(false);
+        return;
+      }
       
       const headers = {
         'Content-Type': 'application/json',
@@ -60,7 +63,7 @@ const RewardsCalculation = () => {
         headers.Authorization = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(`/bookings/by-phone?phone=${phone}`, {
+      const response = await fetch('/bookings/me', {
         method: 'GET',
         headers
       });

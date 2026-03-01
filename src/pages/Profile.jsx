@@ -30,8 +30,11 @@ const Profile = () => {
 
   const fetchAndCalculateDrops = async () => {
     try {
-      const phone = localStorage.getItem('userPhone');
       const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        setLoading(false);
+        return;
+      }
       
       const headers = {
         'Content-Type': 'application/json',
@@ -41,7 +44,7 @@ const Profile = () => {
         headers.Authorization = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(`/bookings/by-phone?phone=${phone}`, {
+      const response = await fetch('/bookings/me', {
         method: 'GET',
         headers
       });
@@ -96,6 +99,8 @@ const Profile = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('phoneNumber');
     localStorage.removeItem('userPhone');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userFirstName');
     // Navigate to login page
     navigate('/login');
   };

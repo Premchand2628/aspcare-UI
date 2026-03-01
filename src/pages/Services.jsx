@@ -7,10 +7,15 @@ const Services = () => {
   const navigate = useNavigate();
 
   const handleServiceClick = (serviceName) => {
-    if (serviceName === 'Home') {
-      navigate('/booking');
+    const normalized = String(serviceName || '').toUpperCase().replace(/\s+/g, ' ').trim();
+    const serviceType = normalized === 'HOME'
+      ? 'HOME'
+      : normalized.replace(' ', '_');
+
+    if (serviceType === 'HOME') {
+      navigate('/booking', { state: { serviceType } });
     } else {
-      navigate('/select-center');
+      navigate('/select-center', { state: { serviceType } });
     }
   };
 

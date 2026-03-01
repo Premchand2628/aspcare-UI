@@ -88,10 +88,14 @@ function Login() {
       if (response.ok && data.success) {
         const token = data.data?.token || data.token || data.jwt || '';
         const phone = data.data?.phone || '';
+        const email = data.data?.email || '';
         const firstName = data.data?.firstName || '';
 
         if (token) {
           localStorage.setItem('authToken', token);
+        }
+        if (email) {
+          localStorage.setItem('userEmail', email);
         }
         if (phone) {
           localStorage.setItem('userPhone', phone);
@@ -202,7 +206,7 @@ function Login() {
           <>
             {/* Google Login Button */}
             <div className="google-login-section">
-              <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+              <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}

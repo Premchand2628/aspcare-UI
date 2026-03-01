@@ -25,8 +25,11 @@ const OrderDetail = () => {
 
   const fetchOrderDetail = async () => {
     try {
-      const phone = localStorage.getItem('userPhone');
       const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        setLoading(false);
+        return;
+      }
       
       const headers = {
         'Content-Type': 'application/json',
@@ -36,7 +39,7 @@ const OrderDetail = () => {
         headers.Authorization = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(`/bookings/by-phone?phone=${phone}`, {
+      const response = await fetch('/bookings/me', {
         method: 'GET',
         headers
       });
@@ -229,20 +232,7 @@ const OrderDetail = () => {
       {/* Header */}
       <header className="header">
         <button className="back-btn-inline" onClick={() => navigate(-1)}>←</button>
-        <div className="user-info">
-          <div className="avatar">
-            <img src="/images/user-avatar.png" alt="User" />
-          </div>
-          <span className="tier-badge">Tier Member</span>
-        </div>
-        <div className="header-icons">
-          <div className="icon-badge">
-            <img src="/images/rewards-icon.png" alt="Rewards" />
-          </div>
-          <div className="icon-badge notification">
-            <span className="notification-emoji">🔔</span>
-          </div>
-        </div>
+        <div className="user-info"></div>
       </header>
 
       {/* Order Header */}
