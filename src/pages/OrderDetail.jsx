@@ -46,7 +46,14 @@ const OrderDetail = () => {
 
       if (response.ok) {
         const data = await response.json();
-        const foundOrder = data.find(o => o.id === parseInt(id));
+        const numericId = Number(id);
+        const foundOrder = data.find((o) => {
+          const orderBookingCode = String(o?.bookingCode || '').trim();
+          if (orderBookingCode && orderBookingCode === String(id).trim()) {
+            return true;
+          }
+          return Number.isFinite(numericId) && o.id === numericId;
+        });
         setOrder(foundOrder || null);
       }
     } catch (error) {
@@ -110,16 +117,16 @@ const OrderDetail = () => {
 
       if (response.ok) {
         const data = await response.json();
-        alert(data.message || 'Booking cancelled successfully');
+        alert(`${data.message || 'Booking cancelled successfully'} (Order#: ${getOrderRef()})`);
         setShowCancelPopup(false);
         navigate('/orders');
       } else {
         const errorData = await response.json();
-        alert(errorData.message || 'Failed to cancel booking');
+        alert(`${errorData.message || 'Failed to cancel booking'} (Order#: ${getOrderRef()})`);
       }
     } catch (error) {
       console.error('Error confirming cancel:', error);
-      alert('Error processing cancellation');
+      alert(`Error processing cancellation (Order#: ${getOrderRef()})`);
     } finally {
       setCancelling(false);
     }
@@ -196,15 +203,15 @@ const OrderDetail = () => {
       });
 
       if (response.ok) {
-        alert('Booking rescheduled successfully!');
+        alert(`Booking rescheduled successfully! (Order#: ${getOrderRef()})`);
         setShowReschedulePopup(false);
         fetchOrderDetail();
       } else {
-        alert('Failed to reschedule booking');
+        alert(`Failed to reschedule booking (Order#: ${getOrderRef()})`);
       }
     } catch (error) {
       console.error('Error updating booking:', error);
-      alert('Error rescheduling booking');
+      alert(`Error rescheduling booking (Order#: ${getOrderRef()})`);
     }
   };
 
@@ -227,6 +234,12 @@ const OrderDetail = () => {
     return `${percent.toFixed(0)}%`;
   };
 
+  const getOrderRef = () => ((order?.bookingCode && String(order.bookingCode).trim())
+    ? String(order.bookingCode).trim()
+    : (order?.id ?? id));
+
+  const displayOrderCode = getOrderRef();
+
   return (
     <div className="page-container">
       {/* Header */}
@@ -237,7 +250,7 @@ const OrderDetail = () => {
 
       {/* Order Header */}
       <div className="order-header">
-        <h1>Order#: {order?.id ?? id}</h1>
+        <h1>Order#: {displayOrderCode}</h1>
         <div className="order-title-row">
           <h2>{order?.washType || order?.serviceType || 'Service'}</h2>
           <h2>{order?.phone || localStorage.getItem('userPhone') || 'N/A'}</h2>

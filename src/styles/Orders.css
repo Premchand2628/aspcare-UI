@@ -198,6 +198,24 @@
   transform: translateY(-2px);
 }
 
+.show-more-orders-btn {
+  width: 100%;
+  border: none;
+  border-radius: 20px;
+  padding: 12px;
+  background-color: #5E4DB2;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.show-more-orders-btn:hover {
+  background-color: #4b3d99;
+  transform: translateY(-2px);
+}
+
 /* Upgrade Modal */
 .upgrade-modal {
   background: white;

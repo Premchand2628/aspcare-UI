@@ -5,6 +5,7 @@ import '../styles/Profile.css';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const [showPolicyPopup, setShowPolicyPopup] = useState(false);
   const [totalDrops, setTotalDrops] = useState(0);
   const [loading, setLoading] = useState(true);
   const [firstName, setFirstName] = useState(() => {
@@ -106,16 +107,28 @@ const Profile = () => {
   };
 
   const accountMenu = [
-    { id: 1, icon: '➕', label: 'My Subscriptions', path: '/membership-detail' },
+    { id: 1, icon: '➕', label: 'My Subscriptions', path: '/my-subscriptions' },
     { id: 2, icon: '💳', label: 'Payment Methods', path: '#' },
     { id: 3, icon: '🎁', label: 'Referrals', path: '/referral-details' }
   ];
 
   const generalMenu = [
     { id: 1, icon: '🎧', label: 'Help Center', path: '/chatbot' },
-    { id: 2, icon: '🛡️', label: 'Privacy Policy & Terms of Service', path: '#' },
+    { id: 2, icon: '🛡️', label: 'Privacy Policy & Terms of Service', action: 'policy-popup' },
     { id: 3, icon: '🚪', label: 'Logout', action: 'logout' }
   ];
+
+  const handleGeneralMenuClick = (item) => {
+    if (item.action === 'logout') {
+      handleLogout();
+      return;
+    }
+    if (item.action === 'policy-popup') {
+      setShowPolicyPopup(true);
+      return;
+    }
+    navigate(item.path || '#');
+  };
 
   return (
     <div className="page-container">
@@ -172,7 +185,7 @@ const Profile = () => {
           <div 
             key={item.id} 
             className="menu-item"
-            onClick={() => item.action === 'logout' ? handleLogout() : navigate(item.path || '#')}
+            onClick={() => handleGeneralMenuClick(item)}
           >
             <span className="menu-icon">{item.icon}</span>
             <span className="menu-label">{item.label}</span>
@@ -180,6 +193,53 @@ const Profile = () => {
           </div>
         ))}
       </div>
+
+      {showPolicyPopup && (
+        <div className="policy-overlay" onClick={() => setShowPolicyPopup(false)}>
+          <div className="policy-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="policy-popup-head">
+              <h3>Policies</h3>
+              <button
+                type="button"
+                className="policy-close-btn"
+                onClick={() => setShowPolicyPopup(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <button
+              type="button"
+              className="policy-popup-btn"
+              onClick={() => {
+                setShowPolicyPopup(false);
+                navigate('/aspcare/About us');
+              }}
+            >
+              About us
+            </button>
+            <button
+              type="button"
+              className="policy-popup-btn"
+              onClick={() => {
+                setShowPolicyPopup(false);
+                navigate('/aspcare/refundpolicy');
+              }}
+            >
+              Refund policy
+            </button>
+            <button
+              type="button"
+              className="policy-popup-btn"
+              onClick={() => {
+                setShowPolicyPopup(false);
+                navigate('/aspcare/privacypolicy');
+              }}
+            >
+              Privacy policy
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       <BottomNav active="profile" />

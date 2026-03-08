@@ -163,6 +163,71 @@
   font-size: 18px;
   color: #999;
 }
+
+.policy-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  padding: 16px;
+}
+
+.policy-popup {
+  width: min(92%, 300px);
+  background: #c5b8ff;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.policy-popup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.policy-popup h3 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.policy-close-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: #ececf2;
+  color: #555;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.policy-popup-btn {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #333;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.policy-popup-btn:hover {
+  background: #f6f3ff;
+}
 /* Responsive */
 @media (max-width: 480px) {
   .profile-header {

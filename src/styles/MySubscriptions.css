@@ -1,0 +1,271 @@
+.my-subscriptions-page {
+  padding-top: 10px;
+}
+
+.subscriptions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #5e4db2 0%, #7a62d3 100%);
+  color: #fff;
+}
+
+.subscriptions-header h1 {
+  font-size: 20px;
+  color: #fff;
+  text-align: center;
+  flex: 1;
+  font-weight: 700;
+  margin: 0;
+}
+
+.subscriptions-back-btn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  font-size: 22px;
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subscriptions-header-spacer {
+  width: 38px;
+}
+
+.subscriptions-strip-line {
+  width: 100%;
+  height: 1.5px;
+  margin-top: 10px;
+  margin-bottom: 12px;
+  background: linear-gradient(90deg, rgba(198, 213, 79, 0.15), #c6d54f 24%, #c6d54f 76%, rgba(198, 213, 79, 0.15));
+}
+
+.subscriptions-state,
+.subscriptions-error {
+  text-align: center;
+  margin: 24px 0;
+}
+
+.subscriptions-error {
+  color: #c62828;
+}
+
+.subscriptions-empty {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.subscriptions-empty button {
+  margin-top: 10px;
+  background: #5E4DB2;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+}
+
+.subscriptions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 84px;
+}
+
+.subscription-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.subscription-card-active {
+  border-color: #5E4DB2;
+  box-shadow:
+    0 0 0 2px rgba(94, 77, 178, 0.2),
+    0 0 14px rgba(94, 77, 178, 0.45),
+    0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.subscription-compact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.subscription-title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.title-car-type {
+  color: #2f58a9;
+}
+
+.title-service-type {
+  color: #222;
+}
+
+.title-wash-type {
+  color: #5E4DB2;
+}
+
+.title-separator {
+  color: #777;
+}
+
+.subscription-book-btn {
+  background: #4f79c9;
+  color: #fff;
+  border: 1px solid #2e5eaf;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.subscription-book-btn:disabled {
+  background: #b8beca;
+  border-color: #aab2bf;
+  color: #eef1f5;
+  cursor: not-allowed;
+}
+
+.subscription-expand-row {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.subscription-left-text {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 600;
+  color: #111;
+}
+
+.left-count {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.subscription-top-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 8px;
+}
+
+.subscription-top-row h3 {
+  margin: 0;
+  font-size: 15px;
+  color: #222;
+}
+
+.status-pill {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 8px;
+  text-transform: uppercase;
+}
+
+.status-pill.success {
+  background: #E6F4EA;
+  color: #1B5E20;
+}
+
+.status-pill.pending {
+  background: #FFF3E0;
+  color: #E65100;
+}
+
+.subscription-meta {
+  margin: 4px 0;
+  color: #555;
+  font-size: 13px;
+}
+
+@media (max-width: 420px) {
+  .subscription-left-text {
+    font-size: 16px;
+  }
+
+  .left-count {
+    font-size: 20px;
+  }
+
+  .subscription-title {
+    font-size: 16px;
+  }
+
+  .subscription-book-btn {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
+
+.subscription-pricing {
+  margin-top: 10px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.subscription-pricing span {
+  display: block;
+  font-size: 11px;
+  color: #777;
+}
+
+.subscription-pricing strong {
+  display: block;
+  font-size: 14px;
+  color: #333;
+  margin-top: 3px;
+}
+
+.subscription-usage {
+  margin-top: 10px;
+  border-top: 1px dashed #e8e8e8;
+  padding-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.subscription-usage span {
+  display: block;
+  font-size: 11px;
+  color: #777;
+}
+
+.subscription-usage strong {
+  display: block;
+  font-size: 14px;
+  color: #222;
+  margin-top: 3px;
+}

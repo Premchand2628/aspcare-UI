@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { readBookingsCache, writeBookingsCache } from '../utils/bookingsCache';
 import '../styles/Orders.css';
 
 const Orders = () => {
+  const ORDERS_BATCH_SIZE = 3;
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  const [visibleOrdersCount, setVisibleOrdersCount] = useState(ORDERS_BATCH_SIZE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
@@ -19,13 +22,27 @@ const Orders = () => {
     fetchOrders();
   }, []);
 
-  const fetchOrders = async () => {
+  useEffect(() => {
+    setVisibleOrdersCount(ORDERS_BATCH_SIZE);
+  }, [orders]);
+
+  const fetchOrders = async ({ forceRefresh = false } = {}) => {
     const authToken = localStorage.getItem('authToken');
     
     if (!authToken) {
       setError('User not properly authenticated. Please login again.');
       setLoading(false);
       return;
+    }
+
+    if (!forceRefresh) {
+      const cachedOrders = readBookingsCache();
+      if (cachedOrders) {
+        setOrders(cachedOrders);
+        setError('');
+        setLoading(false);
+        return;
+      }
     }
     
     try {
@@ -54,6 +71,7 @@ const Orders = () => {
       if (response.ok) {
         const data = parsed || [];
         setOrders(data);
+        writeBookingsCache(data);
         setError('');
       } else {
         if (response.status === 403) {
@@ -99,7 +117,14 @@ const Orders = () => {
     return bookingDateTime > now ? `Scheduled: ${timeSlot}` : 'Completed';
   };
 
+  const getOrderRef = (order) => {
+    const bookingCode = String(order?.bookingCode || '').trim();
+    return bookingCode || order?.id;
+  };
+
   const normalizeWashType = (value) => String(value || '').toLowerCase();
+  const visibleOrders = orders.slice(0, visibleOrdersCount);
+  const canShowMoreOrders = visibleOrdersCount < orders.length;
 
   const getUpgradeOptions = (washType) => {
     const current = normalizeWashType(washType);
@@ -150,7 +175,7 @@ const Orders = () => {
       setShowUpgradePopup(false);
       setUpgradeOrder(null);
       setSelectedUpgrade('');
-      await fetchOrders();
+      await fetchOrders({ forceRefresh: true });
     } catch (err) {
       setUpgradeError('Failed to upgrade booking');
     } finally {
@@ -210,11 +235,12 @@ const Orders = () => {
             </p>
           </div>
         )}
-        {!loading && !error && orders.map((order, index) => (
+        {!loading && !error && visibleOrders.map((order, index) => (
           (() => {
             const status = String(order.status || '').toLowerCase();
             const isCancelled = status === 'cancelled';
             const isUpgraded = String(order.upgradeStatus || '').toLowerCase() === 'upgraded' || order.isUpgraded === true;
+            const displayOrderCode = getOrderRef(order);
             
             // Check if booking is in the future (not completed/past)
             const isFutureBooking = (() => {
@@ -235,7 +261,7 @@ const Orders = () => {
             <div className="order-main-info">
               <div className="order-icon">{getCarIcon(order.carType)}</div>
               <div className="order-details">
-                <p className="order-id">Order#: {order.id}</p>
+                <p className="order-id">Order#: {displayOrderCode}</p>
                 <p className="order-service">{order.washType}</p>
                 <p className="order-date">{getStatusLabel(order.bookingDate, order.timeSlot)}</p>
               </div>
@@ -292,6 +318,16 @@ const Orders = () => {
             );
           })()
         ))}
+
+        {!loading && !error && canShowMoreOrders && (
+          <button
+            type="button"
+            className="show-more-orders-btn"
+            onClick={() => setVisibleOrdersCount((prev) => prev + ORDERS_BATCH_SIZE)}
+          >
+            Show more
+          </button>
+        )}
       </div>
 
       {showUpgradePopup && (

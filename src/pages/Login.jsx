@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import '../styles/Login.css';
@@ -20,6 +20,45 @@ function Login() {
   const [error, setError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+  const [otpCooldownSeconds, setOtpCooldownSeconds] = useState(0);
+
+  useEffect(() => {
+    if (otpCooldownSeconds <= 0) return undefined;
+
+    const intervalId = setInterval(() => {
+      setOtpCooldownSeconds((seconds) => (seconds > 0 ? seconds - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [otpCooldownSeconds]);
+
+  const getRetryAfterSeconds = (response, fallbackSeconds = 600) => {
+    const retryAfterHeader = response?.headers?.get('Retry-After');
+    const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : NaN;
+
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      return Math.ceil(retryAfterSeconds);
+    }
+
+    return fallbackSeconds;
+  };
+
+  const getRetryMessage = (response, fallbackMinutes = 10) => {
+    const retryAfterSeconds = getRetryAfterSeconds(response, fallbackMinutes * 60);
+
+    if (retryAfterSeconds > 0) {
+      const minutes = Math.ceil(retryAfterSeconds / 60);
+      return `Too many requests. Please try again after ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+    }
+
+    return `Too many requests. Please try again after ${fallbackMinutes} minutes.`;
+  };
+
+  const formatCountdown = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  };
 
   const handleSendOTP = async () => {
     if (!mobileNumber || mobileNumber.length !== 10) {
@@ -47,9 +86,15 @@ function Login() {
 
       if (response.ok) {
         setOtpSent(true);
+        setOtpCooldownSeconds(0);
         setError('');
       } else {
-        setError(data.message || 'Failed to send OTP. Please try again.');
+        if (response.status === 429) {
+          setOtpCooldownSeconds(getRetryAfterSeconds(response, 600));
+          setError(getRetryMessage(response, 10));
+        } else {
+          setError(data.message || 'Failed to send OTP. Please try again.');
+        }
       }
     } catch (err) {
       setError('Network error. Please check your connection and try again.');
@@ -61,7 +106,6 @@ function Login() {
 
   const handleLogin = () => {
     // Handle login logic
-    console.log('Logging in with:', email, password);
     navigate('/');
   };
 
@@ -104,10 +148,13 @@ function Login() {
           localStorage.setItem('userFirstName', firstName);
         }
 
-        console.log('Google login successful');
         navigate('/');
       } else {
-        setError(data.message || 'Google login failed. Please try again.');
+        if (response.status === 429) {
+          setError(getRetryMessage(response, 5));
+        } else {
+          setError(data.message || 'Google login failed. Please try again.');
+        }
       }
     } catch (err) {
       setError('Network error with Google login. Please try again.');
@@ -147,14 +194,23 @@ function Login() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        const token = data.data || data.token || data.jwt || '';
+        const token =
+          data.data?.token ||
+          data.token ||
+          data.jwt ||
+          (typeof data.data === 'string' ? data.data : '') ||
+          '';
         if (token) {
           localStorage.setItem('authToken', token);
         }
         localStorage.setItem('userPhone', mobileNumber);
         navigate('/');
       } else {
-        setError(data.message || 'OTP verification failed. Please try again.');
+        if (response.status === 429) {
+          setError(getRetryMessage(response, 10));
+        } else {
+          setError(data.message || 'OTP verification failed. Please try again.');
+        }
       }
     } catch (err) {
       setError('Network error. Please check your connection and try again.');
@@ -268,13 +324,18 @@ function Login() {
 
                 {error && <p className="error-message">{error}</p>}
 
-                <button 
-                  className="primary-btn" 
-                  onClick={handleSendOTP}
-                  disabled={loading || otpSent}
-                >
-                  {loading ? 'Sending...' : otpSent ? 'OTP Sent ✓' : 'Send OTP'}
-                </button>
+                <div className="otp-action-row">
+                  <button 
+                    className="primary-btn" 
+                    onClick={handleSendOTP}
+                    disabled={loading || otpSent || otpCooldownSeconds > 0}
+                  >
+                    {loading ? 'Sending...' : otpSent ? 'OTP Sent ✓' : 'Send OTP'}
+                  </button>
+                  {otpCooldownSeconds > 0 && !otpSent && (
+                    <span className="otp-countdown">Retry in {formatCountdown(otpCooldownSeconds)}</span>
+                  )}
+                </div>
 
                 {otpSent && (
                   <button 
@@ -402,9 +463,18 @@ function Login() {
             </div>
             <p className="input-hint">Minimum 6 characters.</p>
 
-            <button className="primary-btn" onClick={handleSendOTP}>
-              Send OTP
-            </button>
+            <div className="otp-action-row">
+              <button
+                className="primary-btn"
+                onClick={handleSendOTP}
+                disabled={loading || otpCooldownSeconds > 0}
+              >
+                {loading ? 'Sending...' : 'Send OTP'}
+              </button>
+              {otpCooldownSeconds > 0 && (
+                <span className="otp-countdown">Retry in {formatCountdown(otpCooldownSeconds)}</span>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -20,6 +20,9 @@ const Review = () => {
   const [phoneInput, setPhoneInput] = useState('');
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [bookingSubmitLoading, setBookingSubmitLoading] = useState(false);
+  const [bookingSubmitError, setBookingSubmitError] = useState('');
+  const [bookingSubmitSuccess, setBookingSubmitSuccess] = useState('');
 
   // Get data from booking page
   const bookingData = location.state || {
@@ -33,6 +36,7 @@ const Review = () => {
     currency: 'INR',
     waterOption: 'no-thanks'
   };
+  const isSubscriptionRedeemed = Boolean(bookingData.subscriptionRedeemed);
 
   // Format date for display
   const formatDateForDisplay = (date) => {
@@ -46,6 +50,26 @@ const Review = () => {
     const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
     const displayHours = parseInt(hours) % 12 || 12;
     return `${day}-${month}-${year}, ${displayHours}:${minutes}${ampm}`;
+  };
+
+  const formatDateForApi = (value) => {
+    const dateObj = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(dateObj.getTime())) return '';
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getStoredPhone = () => {
+    const possibleKeys = ['phone', 'userPhone', 'mobileNumber', 'mobile', 'contact'];
+    for (const key of possibleKeys) {
+      const value = localStorage.getItem(key);
+      if (value && value.trim()) {
+        return value.trim();
+      }
+    }
+    return '';
   };
 
   // Check for existing bookings with phone number
@@ -227,6 +251,10 @@ const Review = () => {
 
   // Handle promo code validation
   const handleApplyPromoCode = async () => {
+    if (isSubscriptionRedeemed) {
+      return;
+    }
+
     if (!promoCodeInput.trim()) {
       setPromoCodeMessage('Please enter a promo code');
       return;
@@ -284,8 +312,17 @@ const Review = () => {
     setPromoCodeMessage('');
   };
 
+  useEffect(() => {
+    if (!isSubscriptionRedeemed) return;
+    setPromoCodeInput('');
+    setPromoDiscount(0);
+    setPromoCodeApplied(false);
+    setPromoCodeMessage('');
+  }, [isSubscriptionRedeemed]);
+
   // Calculate grand total
-  const grandTotal = (bookingData.subTotal || 0) - membershipDiscount - signupBonus - promoDiscount;
+  const effectivePromoDiscount = isSubscriptionRedeemed ? 0 : promoDiscount;
+  const grandTotal = (bookingData.subTotal || 0) - membershipDiscount - signupBonus - effectivePromoDiscount;
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -297,6 +334,103 @@ const Review = () => {
 
   // Calculate savings
   const savings = (bookingData.subTotal || 0) - Math.max(0, grandTotal);
+
+  const saveBookingToBackend = async () => {
+    const authToken = localStorage.getItem('authToken');
+    const headers = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    };
+    if (authToken) {
+      headers.Authorization = `Bearer ${authToken}`;
+    }
+
+    const fallbackServiceType = bookingData.centreName && bookingData.centreName !== 'Home'
+      ? 'SELF_DRIVE'
+      : 'HOME';
+
+    const payload = {
+      phone: getStoredPhone(),
+      carType: bookingData.vehicleType,
+      serviceType: bookingData.serviceType || fallbackServiceType,
+      washType: bookingData.washType,
+      date: formatDateForApi(bookingData.selectedDate),
+      timeslot: bookingData.selectedTimeSlot,
+      centreName: bookingData.centreName || 'Home',
+      address: bookingData.address,
+      carNumber: bookingData.vehicleNumber,
+      waterProvided: bookingData.subscription?.waterProvided
+        ? String(bookingData.subscription.waterProvided).toUpperCase() === 'Y'
+        : bookingData.waterOption === 'give-water',
+      baseAmount: Number(Math.max(0, bookingData.subTotal || 0)),
+      subscriptionRedeemed: isSubscriptionRedeemed,
+      planTypeCode: bookingData.subscription?.planTypeCode || null
+    };
+
+    const response = await fetch('/bookings', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    let parsedBody = null;
+    try {
+      parsedBody = await response.json();
+    } catch {
+      parsedBody = null;
+    }
+
+    if (!response.ok) {
+      const message = parsedBody?.message || 'Failed to save booking';
+      throw new Error(message);
+    }
+
+    const bookingId = parsedBody?.token || parsedBody?.bookingId || parsedBody?.id || null;
+    const bookingCode = parsedBody?.bookingCode || null;
+    return {
+      bookingId,
+      bookingCode,
+      response: parsedBody
+    };
+  };
+
+  const handleContinue = async () => {
+    if (!isSubscriptionRedeemed) {
+      navigate('/terms');
+      return;
+    }
+
+    setBookingSubmitError('');
+    setBookingSubmitSuccess('');
+    setBookingSubmitLoading(true);
+
+    try {
+      const result = await saveBookingToBackend();
+      const successMessage = result.bookingCode
+        ? `Booking saved successfully. Keycode: ${result.bookingCode}`
+        : result.bookingId
+          ? `Booking saved successfully. Booking ID: ${result.bookingId}`
+          : 'Booking saved successfully.';
+      setBookingSubmitSuccess(successMessage);
+
+      setTimeout(() => {
+        navigate('/terms', {
+          state: {
+            ...bookingData,
+            bookingSaved: true,
+            bookingId: result.bookingId || null,
+            bookingCode: result.bookingCode || null
+          }
+        });
+      }, 1200);
+    } catch (error) {
+      console.error('Booking save failed:', error);
+      setBookingSubmitSuccess('');
+      setBookingSubmitError(error.message || 'Unable to save booking right now. Please try again.');
+    } finally {
+      setBookingSubmitLoading(false);
+    }
+  };
 
   return (
     <div className="page-container review-page">
@@ -375,37 +509,45 @@ const Review = () => {
 
       {/* Promo Code Section */}
       <div className="promo-section">
-        <input
-          type="text"
-          value={promoCodeInput}
-          onChange={(e) => {
-            setPromoCodeInput(e.target.value);
-            setPromoCodeMessage('');
-          }}
-          placeholder="Enter referral code (e.g., ASP-XXXXX)"
-          className="promo-code-input"
-          disabled={promoCodeApplied}
-        />
-        {!promoCodeApplied ? (
-          <button 
-            className="apply-btn-small" 
-            onClick={handleApplyPromoCode}
-            disabled={promoCodeLoading}
-          >
-            {promoCodeLoading ? 'Validating...' : 'Apply'}
-          </button>
-        ) : (
-          <button 
-            className="remove-btn-small" 
-            onClick={handleRemovePromoCode}
-          >
-            Remove
-          </button>
-        )}
-        {promoCodeMessage && (
-          <p className={`promo-message ${promoCodeApplied ? 'success' : 'error'}`}>
-            {promoCodeMessage}
+        {isSubscriptionRedeemed ? (
+          <p className="promo-message success subscription-redeemed-banner">
+            Subscription Redeemed
           </p>
+        ) : (
+          <>
+            <input
+              type="text"
+              value={promoCodeInput}
+              onChange={(e) => {
+                setPromoCodeInput(e.target.value);
+                setPromoCodeMessage('');
+              }}
+              placeholder="Enter referral code (e.g., ASP-XXXXX)"
+              className="promo-code-input"
+              disabled={promoCodeApplied}
+            />
+            {!promoCodeApplied ? (
+              <button
+                className="apply-btn-small"
+                onClick={handleApplyPromoCode}
+                disabled={promoCodeLoading}
+              >
+                {promoCodeLoading ? 'Validating...' : 'Apply'}
+              </button>
+            ) : (
+              <button
+                className="remove-btn-small"
+                onClick={handleRemovePromoCode}
+              >
+                Remove
+              </button>
+            )}
+            {promoCodeMessage && (
+              <p className={`promo-message ${promoCodeApplied ? 'success' : 'error'}`}>
+                {promoCodeMessage}
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -432,10 +574,10 @@ const Review = () => {
             <span>-{formatCurrency(signupBonus)}</span>
           </div>
         )}
-        {promoCodeApplied && promoDiscount > 0 && (
+        {!isSubscriptionRedeemed && promoCodeApplied && effectivePromoDiscount > 0 && (
           <div className="price-row discount-row">
             <span>{promoCodeInput} Applied!</span>
-            <span>-{formatCurrency(promoDiscount)}</span>
+            <span>-{formatCurrency(effectivePromoDiscount)}</span>
           </div>
         )}
         <div className="price-divider"></div>
@@ -453,9 +595,21 @@ const Review = () => {
       )}
 
       {/* Continue Button */}
-      <button className="continue-btn" onClick={() => navigate('/terms')}>
-        Continue to pay
+      <button className="continue-btn" onClick={handleContinue} disabled={bookingSubmitLoading}>
+        {bookingSubmitLoading
+          ? 'Booking...'
+          : isSubscriptionRedeemed
+            ? 'Continue to book'
+            : 'Continue to pay'}
       </button>
+
+      {bookingSubmitError && (
+        <p className="promo-message error">{bookingSubmitError}</p>
+      )}
+
+      {bookingSubmitSuccess && (
+        <p className="promo-message success">{bookingSubmitSuccess}</p>
+      )}
 
       {/* Bottom Navigation */}
       <BottomNav active="home" />

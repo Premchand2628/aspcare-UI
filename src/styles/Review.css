@@ -57,6 +57,22 @@
   color: #666;
 }
 
+.subscription-redeemed-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  width: auto;
+}
+
+.subscription-redeemed-banner {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px;
+}
+
 /* Booking Info */
 .booking-info {
   background-color: #f9f9f9;

@@ -2,6 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/Booking.css';
 
+const normalizeText = (value) => String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
+
+const normalizeServiceType = (value) => {
+  const normalized = normalizeText(value);
+  if (normalized === 'SELFDRIVE' || normalized === 'SELF_DRIVE') return 'SELF_DRIVE';
+  if (normalized === 'HOME') return 'HOME';
+  return normalized || 'HOME';
+};
+
+const normalizeCarType = (value) => {
+  const normalized = normalizeText(value);
+  if (normalized === 'PICK_UP') return 'PICKUP';
+  return normalized;
+};
+
+const normalizeWashType = (value) => {
+  const normalized = String(value || '').trim().toUpperCase();
+  if (normalized === 'FOAM') return 'Foam';
+  if (normalized === 'BASIC') return 'Basic';
+  if (normalized === 'PREMIUM') return 'Premium';
+  return 'Foam';
+};
+
+const normalizeWaterProvided = (value) => (String(value || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N');
+
+const getStoredPhone = () => {
+  const possibleKeys = ['phone', 'userPhone', 'mobileNumber', 'mobile', 'contact'];
+  for (const key of possibleKeys) {
+    const value = localStorage.getItem(key);
+    if (value && value.trim()) {
+      return value.trim();
+    }
+  }
+  return '';
+};
+
 const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,6 +69,13 @@ const Booking = () => {
   const [rateLoading, setRateLoading] = useState(false);
   const [rateError, setRateError] = useState('');
   const [finalPrice, setFinalPrice] = useState(null);
+  const [subscriptionValidationLoading, setSubscriptionValidationLoading] = useState(false);
+  const [subscriptionValidated, setSubscriptionValidated] = useState(false);
+  const [subscriptionValidationError, setSubscriptionValidationError] = useState('');
+
+  const selectedSubscription = location.state?.subscription || null;
+  const isSubscriptionFlow = Boolean(selectedSubscription);
+  const isSubscriptionApplied = isSubscriptionFlow && subscriptionValidated;
 
   // Generate time slots from 7AM to 7PM
   const timeSlots = [
@@ -67,11 +110,12 @@ const Booking = () => {
 
   const resolveServiceType = () => {
     const raw = location.state?.serviceType
+      || selectedSubscription?.serviceType
       || selectedCentre?.serviceType
       || selectedCentre?.service_type
       || selectedCentre?.service
       || 'HOME';
-    return String(raw).trim().toUpperCase();
+    return normalizeServiceType(raw);
   };
 
   const parseLocalDate = (value) => {
@@ -79,6 +123,8 @@ const Booking = () => {
     const [year, month, day] = value.split('-').map(Number);
     return new Date(year, month - 1, day);
   };
+
+  const resolvedServiceType = resolveServiceType();
 
   const handleDateSelect = (date) => {
     if (!date) return;
@@ -230,7 +276,92 @@ const Booking = () => {
   }, [selectedCentre, selectedCentre?.lat, selectedCentre?.lng]);
 
   useEffect(() => {
+    if (!selectedSubscription) return;
+
+    const normalizedCarType = normalizeCarType(selectedSubscription.carType);
+    const normalizedWashType = normalizeWashType(selectedSubscription.washType);
+
+    if (normalizedCarType) {
+      setSelectedVehicle(normalizedCarType);
+    }
+    setWashType(normalizedWashType);
+    setWaterOption(normalizeWaterProvided(selectedSubscription.waterProvided) === 'Y' ? 'give-water' : 'no-thanks');
+  }, [selectedSubscription]);
+
+  useEffect(() => {
+    if (!selectedSubscription) return;
+
+    const validateSubscription = async () => {
+      setSubscriptionValidationLoading(true);
+      setSubscriptionValidationError('');
+      setSubscriptionValidated(false);
+
+      try {
+        const planCode = String(selectedSubscription.planTypeCode || '').trim();
+        const phone = getStoredPhone();
+
+        if (!planCode || !phone) {
+          setSubscriptionValidationError('Missing phone number or plan code for subscription redemption.');
+          return;
+        }
+
+        const authToken = localStorage.getItem('authToken');
+        const headers = {
+          Accept: 'application/json'
+        };
+        if (authToken) {
+          headers.Authorization = `Bearer ${authToken}`;
+        }
+
+        const response = await fetch(`/memberships/deal-price-bookings/by-phone?phone=${encodeURIComponent(phone)}`, {
+          method: 'GET',
+          headers
+        });
+
+        if (!response.ok) {
+          setSubscriptionValidationError('Unable to validate subscription right now.');
+          return;
+        }
+
+        const data = await response.json();
+        const entries = Array.isArray(data) ? data : [];
+
+        const matched = entries.find((item) => {
+          const samePlanCode = String(item.planTypeCode || '').trim().toUpperCase() === planCode.toUpperCase();
+          const sameCarType = normalizeCarType(item.carType) === normalizeCarType(selectedSubscription.carType);
+          const sameWashType = normalizeWashType(item.washType) === normalizeWashType(selectedSubscription.washType);
+          const sameServiceType = normalizeServiceType(item.serviceType) === normalizeServiceType(selectedSubscription.serviceType);
+          const hasWashesLeft = Number(item.leftWashes || 0) > 0;
+          return samePlanCode && sameCarType && sameWashType && sameServiceType && hasWashesLeft;
+        });
+
+        if (!matched) {
+          setSubscriptionValidationError('Subscription validation failed for this plan and phone number.');
+          return;
+        }
+
+        setSubscriptionValidated(true);
+      } catch (error) {
+        console.error('Subscription validation error:', error);
+        setSubscriptionValidationError('Unable to validate subscription right now.');
+      } finally {
+        setSubscriptionValidationLoading(false);
+      }
+    };
+
+    validateSubscription();
+  }, [selectedSubscription]);
+
+  useEffect(() => {
     if (!selectedVehicle || !washType) return;
+
+    if (isSubscriptionApplied) {
+      setRate({ amount: 0, currency: 'INR' });
+      setFinalPrice(0);
+      setRateLoading(false);
+      setRateError('');
+      return;
+    }
 
     const controller = new AbortController();
 
@@ -285,10 +416,15 @@ const Booking = () => {
     fetchRate();
 
     return () => controller.abort();
-  }, [selectedVehicle, washType]);
+  }, [selectedVehicle, washType, isSubscriptionApplied]);
 
   // Recalculate price when water option changes
   useEffect(() => {
+    if (isSubscriptionApplied) {
+      setFinalPrice(0);
+      return;
+    }
+
     if (rate.amount === null || rate.amount === undefined) {
       setFinalPrice(null);
       return;
@@ -302,7 +438,7 @@ const Booking = () => {
       // No discount
       setFinalPrice(rate.amount);
     }
-  }, [waterOption, rate]);
+  }, [waterOption, rate, isSubscriptionApplied]);
 
   useEffect(() => {
     // Initialize map when component mounts
@@ -440,11 +576,6 @@ const Booking = () => {
     const lng = parseFloat(suggestion.lon);
     setUserLocation({ latitude: lat, longitude: lng });
     updateMapLocation(lat, lng);
-    console.log('Selected location:', {
-      lat: suggestion.lat,
-      lon: suggestion.lon,
-      address: suggestion.display_name
-    });
   };
 
   const vehicleTypes = [
@@ -532,6 +663,7 @@ const Booking = () => {
               value={washType} 
               onChange={(e) => setWashType(e.target.value)}
               className="wash-dropdown"
+              disabled={isSubscriptionApplied}
             >
               <option>Foam</option>
               <option>Basic</option>
@@ -603,7 +735,11 @@ const Booking = () => {
               <div 
                 key={vehicle.id}
                 className={`vehicle-type-card ${selectedVehicle === vehicle.id ? 'selected' : ''}`}
-                onClick={() => setSelectedVehicle(vehicle.id)}
+                onClick={() => {
+                  if (!isSubscriptionApplied) {
+                    setSelectedVehicle(vehicle.id);
+                  }
+                }}
               >
                 {selectedVehicle === vehicle.id && (
                   <div className="check-icon">✓</div>
@@ -626,6 +762,7 @@ const Booking = () => {
               value="give-water"
               checked={waterOption === 'give-water'}
               onChange={(e) => setWaterOption(e.target.value)}
+              disabled={isSubscriptionApplied}
             />
             <label htmlFor="give-water">Get flat $100 by giving water</label>
           </div>
@@ -637,17 +774,28 @@ const Booking = () => {
               value="no-thanks"
               checked={waterOption === 'no-thanks'}
               onChange={(e) => setWaterOption(e.target.value)}
+              disabled={isSubscriptionApplied}
             />
             <label htmlFor="no-thanks">No Thanks</label>
           </div>
         </div>
+
+        {isSubscriptionFlow && (
+          <p className="benefits-note">
+            {subscriptionValidationLoading
+              ? 'Validating subscription plan...'
+              : subscriptionValidated
+                ? 'Subscription validated. This wash is redeemable at ₹0.'
+                : subscriptionValidationError || 'Subscription is not validated yet.'}
+          </p>
+        )}
 
         {/* Price Display and Vehicle Number */}
         <div className="booking-summary-row">
           <div className="price-display">
             <span className="price-label">Price:</span>
             <span className="price-value">
-              {rateLoading ? 'Loading...' : formatRate(finalPrice, rate.currency)}
+              {(rateLoading || subscriptionValidationLoading) ? 'Loading...' : formatRate(finalPrice, rate.currency)}
             </span>
           </div>
 
@@ -676,6 +824,10 @@ const Booking = () => {
             setVehicleNumberError('Please select a date');
             return;
           }
+          if (isSubscriptionFlow && !subscriptionValidated) {
+            setVehicleNumberError(subscriptionValidationError || 'Subscription validation is required before booking.');
+            return;
+          }
           if (!selectedTimeSlot) {
             setVehicleNumberError('Please select a time slot');
             return;
@@ -697,7 +849,9 @@ const Booking = () => {
               vehicleNumber,
               subTotal: finalPrice,
               currency: rate.currency,
-              waterOption
+              waterOption,
+              subscription: selectedSubscription,
+              subscriptionRedeemed: isSubscriptionApplied
             }
           });
         }}>

@@ -2,10 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/SelectCenter.css';
 
+const normalizeServiceType = (value) => {
+  const normalized = String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
+  if (normalized === 'SELFDRIVE') return 'SELF_DRIVE';
+  if (normalized === 'SELF DRIVE') return 'SELF_DRIVE';
+  if (normalized === 'HOME') return 'HOME';
+  return normalized || 'SELF_DRIVE';
+};
+
 const SelectCenter = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const serviceType = location.state?.serviceType || 'SELF_DRIVE';
+  const subscription = location.state?.subscription || null;
+  const serviceType = normalizeServiceType(location.state?.serviceType || subscription?.serviceType || 'SELF_DRIVE');
   const [areas, setAreas] = useState([]);
   const [selectedArea, setSelectedArea] = useState('');
   const [centres, setCentres] = useState([]);
@@ -85,8 +94,14 @@ const SelectCenter = () => {
 
   const handleSelectCentre = (centre) => {
     setSelectedCentre(centre);
-    // You can navigate with centre data if needed
-    navigate('/booking', { state: { selectedCentre: centre, serviceType } });
+    navigate('/booking', {
+      state: {
+        selectedCentre: centre,
+        serviceType,
+        subscription,
+        source: location.state?.source || null
+      }
+    });
   };
 
   return (
@@ -153,7 +168,17 @@ const SelectCenter = () => {
 
       {/* Select Button */}
       {selectedCentre && (
-        <button className="select-center-btn" onClick={() => navigate('/booking', { state: { selectedCentre, serviceType } })}>
+        <button
+          className="select-center-btn"
+          onClick={() => navigate('/booking', {
+            state: {
+              selectedCentre,
+              serviceType,
+              subscription,
+              source: location.state?.source || null
+            }
+          })}
+        >
           Continue with {selectedCentre.name}
         </button>
       )}

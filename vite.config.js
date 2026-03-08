@@ -64,7 +64,14 @@ export default defineConfig(({ command, mode }) => {
         },
         '/memberships': {
           target: gatewayTarget,
-          changeOrigin: true
+          changeOrigin: true,
+          bypass: (req) => {
+            const acceptHeader = req.headers?.accept || '';
+            if (typeof acceptHeader === 'string' && acceptHeader.includes('text/html')) {
+              return '/index.html';
+            }
+            return undefined;
+          }
         },
         '/rates': {
           target: gatewayTarget,

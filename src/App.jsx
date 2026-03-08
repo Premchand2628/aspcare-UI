@@ -17,6 +17,10 @@ import RewardsCalculation from './pages/RewardsCalculation';
 import Offers from './pages/Offers';
 import OfferDetail from './pages/OfferDetail';
 import Chatbot from './pages/Chatbot';
+import MySubscriptions from './pages/MySubscriptions';
+import AboutUs from './pages/AboutUs';
+import RefundPolicy from './pages/RefundPolicy';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 function App() {
   return (
@@ -40,6 +44,11 @@ function App() {
           <Route path="/offers" element={<Offers />} />
           <Route path="/offer-detail" element={<OfferDetail />} />
           <Route path="/chatbot" element={<Chatbot />} />
+          <Route path="/my-subscriptions" element={<MySubscriptions />} />
+          <Route path="/memberships/deal-price-bookings" element={<MySubscriptions />} />
+          <Route path="/aspcare/About us" element={<AboutUs />} />
+          <Route path="/aspcare/refundpolicy" element={<RefundPolicy />} />
+          <Route path="/aspcare/privacypolicy" element={<PrivacyPolicy />} />
         </Routes>
       </div>
     </Router>

@@ -209,7 +209,6 @@ const MembershipPlans = () => {
       }
 
       const data = await response.json();
-      console.log('Membership created:', data);
       
       // Activate the membership if status is HOLD
       if (data.status === 'HOLD') {
@@ -220,8 +219,7 @@ const MembershipPlans = () => {
           });
           
           if (activateResponse.ok) {
-            const activatedData = await activateResponse.json();
-            console.log('Membership activated:', activatedData);
+            await activateResponse.json();
           }
         } catch (activateErr) {
           console.error('Failed to activate membership:', activateErr);

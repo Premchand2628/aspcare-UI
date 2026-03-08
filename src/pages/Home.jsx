@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { writeBookingsCache, writeActiveMembershipCache } from '../utils/bookingsCache';
 import '../styles/Home.css';
 
 const Home = () => {
@@ -52,6 +53,7 @@ const Home = () => {
       if (response.ok) {
         const data = await response.json();
         setMembership(data);
+        writeActiveMembershipCache(data);
       } else {
         setMembership(null);
       }
@@ -102,6 +104,7 @@ const Home = () => {
       }
 
       const data = await response.json();
+      writeBookingsCache(data);
       
       // Track if user has any bookings
       setHasBookings(data && data.length > 0);

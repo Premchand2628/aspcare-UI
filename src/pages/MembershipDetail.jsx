@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { readActiveMembershipCache, writeActiveMembershipCache } from '../utils/bookingsCache';
 import '../styles/MembershipDetail.css';
 
 const MembershipDetail = () => {
@@ -29,22 +30,31 @@ const MembershipDetail = () => {
         headers.Authorization = `Bearer ${authToken}`;
       }
 
-      // Always try to get the active membership first
-      const response = await fetch('/memberships/active/me', {
-        method: 'GET',
-        headers: headers
-      });
+      const cachedMembership = readActiveMembershipCache();
+      let activeMembership = cachedMembership;
 
-      if (response.ok) {
-        const data = await response.json();
-        setMembership(data);
+      if (cachedMembership) {
+        setMembership(cachedMembership);
         setError('');
-      } else if (response.status === 404) {
-        setError('No active membership found');
-        setMembership(null);
       } else {
-        setError('Failed to fetch membership details');
-        setMembership(null);
+        const response = await fetch('/memberships/active/me', {
+          method: 'GET',
+          headers: headers
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          activeMembership = data;
+          setMembership(data);
+          writeActiveMembershipCache(data);
+          setError('');
+        } else if (response.status === 404) {
+          setError('No active membership found');
+          setMembership(null);
+        } else {
+          setError('Failed to fetch membership details');
+          setMembership(null);
+        }
       }
 
       // Fetch ALL memberships for payment history
@@ -74,22 +84,14 @@ const MembershipDetail = () => {
               return dateB - dateA;
             });
             setAllMemberships(sorted);
-            console.log('All memberships fetched:', sorted.length);
           }
         } else {
           console.warn('Failed to fetch all memberships, status:', allResponse.status);
         }
       } catch (err) {
         console.error('Error fetching all memberships:', err);
-        // Fallback: if only active membership exists, use that for payment history
-        if (response.ok) {
-          try {
-            const activeMembership = await response.json();
-            setAllMemberships([activeMembership]);
-            console.log('Using active membership as fallback for payment history');
-          } catch (e) {
-            console.error('Error parsing active membership:', e);
-          }
+        if (activeMembership) {
+          setAllMemberships([activeMembership]);
         }
       }
     } catch (err) {

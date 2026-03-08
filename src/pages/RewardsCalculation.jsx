@@ -95,18 +95,6 @@ const RewardsCalculation = () => {
   };
 
   const getBaseDrops = (order) => {
-    // Debug: Log all fields from order
-    console.log('Order Details:', {
-      id: order.id,
-      washType: order.washType,
-      waterOption: order.waterOption,
-      serviceType: order.serviceType,
-      water: order.water,
-      carWashType: order.carWashType,
-      packageType: order.packageType,
-      allFields: Object.keys(order).map(key => `${key}: ${order[key]}`)
-    });
-
     const washType = order.washType || order.serviceType || order.carWashType || order.packageType || '';
     const waterOption = order.waterOption || order.water || 'no-thanks';
     
@@ -127,8 +115,6 @@ const RewardsCalculation = () => {
     else if (normalizedWash.includes('PREMIUM')) washKey = 'Premium';
 
     const key = `${washKey}-${waterKey}`;
-    
-    console.log(`Calculated key: ${key}, drops: ${dropsMap[key] || 0}`);
     
     return dropsMap[key] || 0;
   };

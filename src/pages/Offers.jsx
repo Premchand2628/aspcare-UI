@@ -81,6 +81,7 @@ const Offers = () => {
           waterProviding: String(deal.dealWaterProviding || 'N').toUpperCase() === 'Y' ? 'Y' : 'N',
           originalPrice: parseFloat(deal.dealActualPrice),
           discountedPrice: parseFloat(deal.dealFinalPrice),
+          totalWashes: Number(deal.dealTotalWashes || 3),
         }));
         setOffers(transformedOffers);
         setError('');
@@ -221,7 +222,23 @@ const Offers = () => {
   };
 
   const saveDealBooking = async (deal) => {
-    const authToken = localStorage.getItem('authToken');
+    const authTokenRaw = (
+      localStorage.getItem('authToken') ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('jwt') ||
+      ''
+    ).trim();
+
+    const isLikelyJwt = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(authTokenRaw);
+    const authToken = isLikelyJwt ? authTokenRaw : '';
+
+    if (!authToken) {
+      localStorage.removeItem('authToken');
+      throw new Error('SESSION_EXPIRED');
+    }
+
+    localStorage.setItem('authToken', authToken);
+
     const headers = {
       'Content-Type': 'application/json',
       Accept: 'application/json'
@@ -242,7 +259,8 @@ const Offers = () => {
       originalAmount: Number(formatMoney(deal.originalPrice)),
       payableAmount: Number(formatMoney(deal.discountedPrice)),
       washType: deal.washType,
-      waterProvided: deal.waterProviding
+      waterProvided: deal.waterProviding,
+      totalWashes: Number(deal.totalWashes || 3)
     };
 
     const response = await fetch('/memberships/deal-price-bookings', {
@@ -250,6 +268,11 @@ const Offers = () => {
       headers,
       body: JSON.stringify(payload)
     });
+
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem('authToken');
+      throw new Error('SESSION_EXPIRED');
+    }
 
     if (!response.ok) {
       const message = await response.text();
@@ -269,6 +292,11 @@ const Offers = () => {
       })
       .catch((err) => {
         console.error('Deal booking save failed:', err);
+        if (err.message === 'SESSION_EXPIRED') {
+          alert('Session expired. Please login again.');
+          navigate('/login');
+          return;
+        }
         alert('Unable to process payment right now. Please try again.');
       });
   };
