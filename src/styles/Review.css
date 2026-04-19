@@ -114,6 +114,40 @@
   font-style: italic;
 }
 
+.save-default-card {
+  background-color: #f9f9f9;
+  border-radius: 15px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #ece8ff;
+}
+
+.save-default-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #2b2b2b;
+  font-weight: 600;
+}
+
+.save-default-options {
+  display: flex;
+  gap: 18px;
+}
+
+.save-default-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.save-default-option input {
+  accent-color: #5E4DB2;
+}
+
 /* Promo Section */
 .promo-section {
   display: flex;
@@ -172,7 +206,7 @@
 .promo-code-input-wrapper {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .promo-code-input-wrapper input {
@@ -182,14 +216,14 @@
 .apply-btn-small {
   background-color: #5E4DB2;
   color: white;
-  padding: 15px 25px;
+  padding: 12px 20px;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   border: none;
   transition: background-color 0.3s;
-  width: 100%;
+  white-space: nowrap;
 }
 
 .apply-btn-small:hover:not(:disabled) {
@@ -205,20 +239,71 @@
 .remove-btn-small {
   background-color: #FF6B6B;
   color: white;
-  padding: 15px 25px;
+  padding: 12px 20px;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   border: none;
   transition: background-color 0.3s;
-  width: 100%;
+  white-space: nowrap;
 }
 
 .remove-btn-small:hover {
   background-color: #FF5252;
 }
+
+/* Existing Subscription Prompt */
+.existing-sub-prompt {
+  background: linear-gradient(135deg, #f0ebff 0%, #e8e2fc 100%);
+  border: 1px solid #d4c8f5;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.existing-sub-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5E4DB2;
+  margin: 0 0 6px;
+}
+
+.existing-sub-question {
+  font-size: 13px;
+  color: #555;
+  margin: 0 0 12px;
+}
+
+.existing-sub-options {
+  display: flex;
+  gap: 12px;
+}
+
+.existing-sub-radio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #ccc;
+  background: #fff;
+  flex: 1;
+  justify-content: center;
   font-weight: 600;
+}
+
+.existing-sub-radio.active {
+  border-color: #5E4DB2;
+  background: #f3effe;
+  color: #5E4DB2;
+}
+
+.existing-sub-radio input[type="radio"] {
+  accent-color: #5E4DB2;
 }
 
 /* Price Breakdown */
@@ -276,6 +361,178 @@
   box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
 }
 
+/* Subscription Savings Banner */
+.subscription-savings-banner {
+  background: linear-gradient(135deg, #8b74e0 0%, #6a52c4 100%);
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  margin-top: 20px;
+  box-shadow: 0 4px 12px rgba(106, 82, 196, 0.3);
+}
+
+.subscription-savings-text {
+  display: block;
+  color: #fff;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.subscribe-now-btn {
+  background-color: #FFD700;
+  color: #333;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+/* Deal Subscription Popup */
+.deal-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 20px;
+}
+
+.deal-popup-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px 20px;
+  max-width: 360px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.deal-popup-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.deal-popup-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.deal-popup-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #FFD700, #FFC700);
+  color: #333;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.deal-popup-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin: 4px 0;
+}
+
+.deal-popup-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 2px 0 0;
+}
+
+.deal-popup-pricing {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.deal-popup-original {
+  text-decoration: line-through;
+  color: #999;
+  font-size: 15px;
+  margin-right: 8px;
+}
+
+.deal-popup-final {
+  font-size: 26px;
+  font-weight: 800;
+  color: #5E4DB2;
+}
+
+.deal-popup-saving {
+  text-align: center;
+  font-size: 13px;
+  color: #4caf50;
+  margin-bottom: 16px;
+}
+
+.deal-popup-terms {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 18px;
+  cursor: pointer;
+}
+
+.deal-popup-terms input[type="checkbox"] {
+  accent-color: #5E4DB2;
+  width: 16px;
+  height: 16px;
+}
+
+.deal-popup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.deal-popup-pay-btn {
+  width: 100%;
+  background-color: #5E4DB2;
+  color: #fff;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.deal-popup-pay-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deal-popup-explore-btn {
+  width: 100%;
+  background: none;
+  border: 2px solid #5E4DB2;
+  color: #5E4DB2;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 /* Continue Button */
 .continue-btn {
   width: 100%;
@@ -323,9 +580,41 @@
 
 .phone-modal .modal-subtitle {
   font-size: 14px;
-  color: #666;
-  margin-bottom: 20px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 0;
   line-height: 1.5;
+}
+
+.modal-or-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  color: #999;
+  font-size: 13px;
+}
+
+.modal-or-divider::before,
+.modal-or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #ccc;
+}
+
+.modal-subtitle-green {
+  color: #4CAF50;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.highlight-bonus {
+  background: #4CAF50;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 15px;
 }
 
 .phone-input {
@@ -378,6 +667,169 @@
   cursor: not-allowed;
 }
 
+/* Phone Link Modal (3-step flow) */
+.phone-link-modal {
+  background: #fff;
+  width: min(380px, 90vw);
+  border-radius: 20px;
+  padding: 30px 24px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.phone-link-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  color: #888;
+  cursor: pointer;
+}
+
+.phone-link-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.phone-link-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1b2142;
+}
+
+.phone-link-desc {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.phone-link-desc-green {
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.phone-link-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  font-size: 16px;
+  text-align: center;
+  letter-spacing: 2px;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.phone-link-input:focus {
+  border-color: #5e4db2;
+}
+
+.phone-link-error {
+  color: #c62828;
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+.phone-link-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #5e4db2, #764ba2);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.phone-link-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.phone-link-btn-secondary {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  border: 2px solid #5e4db2;
+  border-radius: 12px;
+  background: transparent;
+  color: #5e4db2;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Celebration Banner */
+.celebration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: celebFadeIn 0.3s ease;
+}
+
+.celebration-banner {
+  background: linear-gradient(135deg, #1a0533, #2d1b69);
+  border: 2px solid #ffd700;
+  border-radius: 20px;
+  padding: 32px 28px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.25);
+  animation: celebPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.celebration-emoji {
+  font-size: 42px;
+  display: inline-block;
+  animation: celebBounce 0.6s ease infinite alternate;
+}
+
+.celebration-title {
+  color: #ffd700;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 10px 0 6px;
+}
+
+.celebration-text {
+  color: #e8e0f5;
+  font-size: 16px;
+  margin: 0;
+}
+
+.celebration-text strong {
+  color: #ffd700;
+  font-size: 18px;
+}
+
+@keyframes celebFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes celebPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes celebBounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+
 /* Responsive Design */
 @media (max-width: 480px) {
   .service-info-card {
@@ -419,17 +871,33 @@
     gap: 8px;
   }
 
+  .save-default-card {
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+
+  .save-default-title {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .save-default-options {
+    gap: 14px;
+  }
+
+  .save-default-option {
+    font-size: 13px;
+  }
+
   .promo-code-input {
-    width: 100%;
     padding: 12px;
     font-size: 14px;
   }
 
   .apply-btn-small,
   .remove-btn-small {
-    width: 100%;
-    padding: 12px;
-    font-size: 14px;
+    padding: 10px 16px;
+    font-size: 13px;
   }
 
   .price-breakdown {
@@ -487,19 +955,13 @@
     font-size: 15px;
   }
 
-  .promo-section {
-    flex-direction: row;
-    gap: 12px;
-    align-items: flex-end;
-  }
-
   .promo-code-input {
     flex: 1;
   }
 
   .apply-btn-small,
   .remove-btn-small {
-    padding: 15px 30px;
+    padding: 12px 24px;
   }
 
   .price-row {
@@ -516,4 +978,90 @@
     margin-top: 60px;
     margin-bottom: 25px;
   }
+}
+
+/* Login Popup Overlay */
+.review-page .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+/* Login Popup */
+.review-login-popup {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 24px 24px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+  margin: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: reviewPopupSlideUp 0.25s ease-out;
+}
+
+@keyframes reviewPopupSlideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.review-login-popup-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.review-login-popup-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #1b1f33;
+}
+
+.review-login-popup-desc {
+  margin: 0 0 22px;
+  font-size: 14px;
+  color: #666;
+}
+
+.review-login-popup-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.review-login-popup-btn {
+  flex: 1;
+  border: none;
+  border-radius: 12px;
+  padding: 13px 0;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.review-login-popup-btn.login {
+  background: linear-gradient(135deg, #4361ee, #7209b7);
+  color: #fff;
+}
+
+.review-login-popup-btn.signup {
+  background: linear-gradient(135deg, #f72585, #b5179e);
+  color: #fff;
+}
+
+.review-login-popup-close {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
 }

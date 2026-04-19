@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import PaymentMethodModal from '../components/PaymentMethodModal';
 import { readBookingsCache, writeBookingsCache } from '../utils/bookingsCache';
+import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import '../styles/Orders.css';
 
 const Orders = () => {
@@ -17,6 +19,18 @@ const Orders = () => {
   const [selectedUpgrade, setSelectedUpgrade] = useState('');
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState('');
+  const [currentPrice, setCurrentPrice] = useState(null);
+  const [upgradePrice, setUpgradePrice] = useState(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [showUpgradePayment, setShowUpgradePayment] = useState(false);
+  const [noPhone, setNoPhone] = useState(false);
+  const [notLoggedIn, setNotLoggedIn] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('upcoming');
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [filterCarType, setFilterCarType] = useState('');
+  const [filterWashType, setFilterWashType] = useState('');
+  const [filterCarNumber, setFilterCarNumber] = useState('');
+  const [filterDate, setFilterDate] = useState('');
 
   useEffect(() => {
     fetchOrders();
@@ -27,10 +41,17 @@ const Orders = () => {
   }, [orders]);
 
   const fetchOrders = async ({ forceRefresh = false } = {}) => {
-    const authToken = localStorage.getItem('authToken');
+    const authToken = getValidatedAuthToken();
     
     if (!authToken) {
-      setError('User not properly authenticated. Please login again.');
+      setNotLoggedIn(true);
+      setLoading(false);
+      return;
+    }
+
+    const userPhone = localStorage.getItem('userPhone');
+    if (!userPhone || userPhone === 'null' || userPhone.trim() === '') {
+      setNoPhone(true);
       setLoading(false);
       return;
     }
@@ -46,15 +67,10 @@ const Orders = () => {
     }
     
     try {
-      const headers = {
+      const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-      };
-      
-      // Add Authorization header if token exists
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch('/bookings/me', {
         method: 'GET',
@@ -75,9 +91,14 @@ const Orders = () => {
         setError('');
       } else {
         if (response.status === 403) {
-          setError('Unauthorized. Please login again.');
+          setNotLoggedIn(true);
         } else {
-          setError((parsed && parsed.message) || 'Failed to fetch orders');
+          const errMsg = (parsed && parsed.message) || 'Failed to fetch orders';
+          if (errMsg.toLowerCase().includes('phone')) {
+            setNoPhone(true);
+          } else {
+            setError(errMsg);
+          }
         }
       }
     } catch (err) {
@@ -111,10 +132,7 @@ const Orders = () => {
   };
 
   const getStatusLabel = (bookingDate, timeSlot) => {
-    if (!bookingDate || !timeSlot) return 'Not scheduled';
-    const bookingDateTime = new Date(`${bookingDate}T${timeSlot.split('-')[0]}`);
-    const now = new Date();
-    return bookingDateTime > now ? `Scheduled: ${timeSlot}` : 'Completed';
+    return '';
   };
 
   const getOrderRef = (order) => {
@@ -123,8 +141,25 @@ const Orders = () => {
   };
 
   const normalizeWashType = (value) => String(value || '').toLowerCase();
-  const visibleOrders = orders.slice(0, visibleOrdersCount);
-  const canShowMoreOrders = visibleOrdersCount < orders.length;
+
+  const getStatusCategory = (status) => {
+    const s = String(status || '').toUpperCase();
+    if (s === 'CANCELLED') return 'cancelled';
+    if (s === 'COMPLETED' || s === 'CLOSED') return 'completed';
+    if (s === 'IN_SERVICING') return 'inServicing';
+    return 'upcoming';
+  };
+
+  const filteredOrders = orders.filter(o => {
+    if (getStatusCategory(o.status) !== activeFilter) return false;
+    if (filterCarType && String(o.carType || '').toUpperCase() !== filterCarType.toUpperCase()) return false;
+    if (filterWashType && String(o.washType || '').toUpperCase() !== filterWashType.toUpperCase()) return false;
+    if (filterCarNumber && !String(o.carNumber || '').toUpperCase().includes(filterCarNumber.toUpperCase())) return false;
+    if (filterDate && String(o.bookingDate || '') !== filterDate) return false;
+    return true;
+  });
+  const visibleOrders = filteredOrders.slice(0, visibleOrdersCount);
+  const canShowMoreOrders = visibleOrdersCount < filteredOrders.length;
 
   const getUpgradeOptions = (washType) => {
     const current = normalizeWashType(washType);
@@ -133,73 +168,221 @@ const Orders = () => {
     return [];
   };
 
-  const handleOpenUpgrade = (order) => {
+  const handleOpenUpgrade = async (order) => {
     const options = getUpgradeOptions(order?.washType);
     setUpgradeOrder(order);
     setUpgradeOptions(options);
     setSelectedUpgrade(options[0] || '');
     setUpgradeError('');
+    setCurrentPrice(null);
+    setUpgradePrice(null);
     setShowUpgradePopup(true);
+
+    // Fetch current wash price
+    if (order?.carType && order?.washType) {
+      fetchUpgradePrices(order.carType, order.washType, options[0] || '');
+    }
   };
 
-  const handleConfirmUpgrade = async () => {
+  const fetchRate = async (vehicleType, washLevel) => {
+    try {
+      const params = new URLSearchParams({ vehicleType, washLevel: washLevel.toUpperCase() });
+      const headers = withAuthHeader({ Accept: 'application/json' });
+      const response = await fetch(`/rates?${params.toString()}`, { method: 'GET', headers });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.amount != null ? Number(data.amount) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const fetchUpgradePrices = async (carType, currentWash, upgradeWash) => {
+    if (!carType || !currentWash || !upgradeWash) return;
+    setPriceLoading(true);
+    try {
+      const [cur, upg] = await Promise.all([
+        fetchRate(carType, currentWash),
+        fetchRate(carType, upgradeWash)
+      ]);
+      setCurrentPrice(cur);
+      setUpgradePrice(upg);
+    } finally {
+      setPriceLoading(false);
+    }
+  };
+
+  const handleUpgradeOptionChange = (option) => {
+    setSelectedUpgrade(option);
+    if (upgradeOrder?.carType) {
+      fetchUpgradePrices(upgradeOrder.carType, upgradeOrder.washType, option);
+    }
+  };
+
+  const priceDifference = (upgradePrice != null && currentPrice != null) ? Math.max(0, upgradePrice - currentPrice) : null;
+
+  const handleConfirmUpgrade = () => {
     if (!upgradeOrder || !selectedUpgrade) {
       setUpgradeError('Please select a wash type to upgrade.');
       return;
     }
+    setShowUpgradePopup(false);
+    setShowUpgradePayment(true);
+  };
 
+  const handleUpgradePaymentSelect = async (method) => {
+    setShowUpgradePayment(false);
     setUpgrading(true);
     setUpgradeError('');
     try {
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch(`/bookings/${upgradeOrder.id}/upgrade`, {
         method: 'PUT',
         headers,
-        body: JSON.stringify({ washType: selectedUpgrade })
+        body: JSON.stringify({ washType: selectedUpgrade, paymentMethod: method })
       });
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
         setUpgradeError(data?.message || 'Failed to upgrade booking');
+        setShowUpgradePopup(true);
         return;
       }
 
-      setShowUpgradePopup(false);
       setUpgradeOrder(null);
       setSelectedUpgrade('');
       await fetchOrders({ forceRefresh: true });
     } catch (err) {
       setUpgradeError('Failed to upgrade booking');
+      setShowUpgradePopup(true);
     } finally {
       setUpgrading(false);
     }
   };
 
+  const statusCounts = React.useMemo(() => {
+    const counts = { upcoming: 0, inServicing: 0, completed: 0, cancelled: 0 };
+    orders.forEach(o => {
+      const s = String(o.status || '').toUpperCase();
+      if (s === 'CANCELLED') counts.cancelled++;
+      else if (s === 'COMPLETED' || s === 'CLOSED') counts.completed++;
+      else if (s === 'IN_SERVICING') counts.inServicing++;
+      else counts.upcoming++;
+    });
+    return counts;
+  }, [orders]);
+
+  const filterOptions = React.useMemo(() => {
+    const carTypes = [...new Set(orders.map(o => o.carType).filter(Boolean))];
+    const washTypes = [...new Set(orders.map(o => o.washType).filter(Boolean))];
+    const carNumbers = [...new Set(orders.map(o => o.carNumber).filter(Boolean))];
+    return { carTypes, washTypes, carNumbers };
+  }, [orders]);
+
+  const activeSearchCount = [filterCarType, filterWashType, filterCarNumber, filterDate].filter(Boolean).length;
+
+  const clearAllFilters = () => {
+    setFilterCarType('');
+    setFilterWashType('');
+    setFilterCarNumber('');
+    setFilterDate('');
+    setVisibleOrdersCount(ORDERS_BATCH_SIZE);
+  };
+
   return (
     <div className="page-container">
       {/* Header */}
-      <header className="orders-header">
-        <div className="avatar">
-          <img src="/images/user-avatar.png" alt="User" />
+      <div className="orders-ux-header">
+        <header className="orders-header">
+          <button className="orders-back-btn" onClick={() => navigate(-1)}>←</button>
+          <div className="orders-header-copy">
+            <h1 className="orders-title">Your orders</h1>
+          </div>
+          {!loading && !notLoggedIn && orders.length > 0 && (
+            <button className={`orders-header-filter-btn${showFilterPanel ? ' active' : ''}${activeSearchCount > 0 ? ' has-filters' : ''}`} onClick={() => setShowFilterPanel(prev => !prev)}>
+              🔍
+              {activeSearchCount > 0 && <span className="header-filter-badge">{activeSearchCount}</span>}
+            </button>
+          )}
+        </header>
+      </div>
+
+      {/* Status Summary Blocks */}
+      {!loading && !notLoggedIn && orders.length > 0 && (
+        <div className="orders-stats-row">
+          <div className={`orders-stat-card${activeFilter === 'upcoming' ? ' stat-active' : ''}`} onClick={() => { setActiveFilter('upcoming'); setVisibleOrdersCount(ORDERS_BATCH_SIZE); }}>
+            <span className="orders-stat-count stat-upcoming">{statusCounts.upcoming}</span>
+            <span className="orders-stat-label">UPCOMING</span>
+          </div>
+          <div className={`orders-stat-card${activeFilter === 'inServicing' ? ' stat-active' : ''}`} onClick={() => { setActiveFilter('inServicing'); setVisibleOrdersCount(ORDERS_BATCH_SIZE); }}>
+            <span className="orders-stat-count stat-in-servicing">{statusCounts.inServicing}</span>
+            <span className="orders-stat-label">IN SERVICING</span>
+          </div>
+          <div className={`orders-stat-card${activeFilter === 'completed' ? ' stat-active' : ''}`} onClick={() => { setActiveFilter('completed'); setVisibleOrdersCount(ORDERS_BATCH_SIZE); }}>
+            <span className="orders-stat-count stat-completed">{statusCounts.completed}</span>
+            <span className="orders-stat-label">COMPLETED</span>
+          </div>
+          <div className={`orders-stat-card${activeFilter === 'cancelled' ? ' stat-active' : ''}`} onClick={() => { setActiveFilter('cancelled'); setVisibleOrdersCount(ORDERS_BATCH_SIZE); }}>
+            <span className="orders-stat-count stat-cancelled">{statusCounts.cancelled}</span>
+            <span className="orders-stat-label">CANCELLED</span>
+          </div>
         </div>
-        <h1 className="orders-title">Your orders</h1>
-      </header>
+      )}
+
+      {/* Filter Panel */}
+      {showFilterPanel && !loading && orders.length > 0 && (
+        <div className="orders-filter-panel">
+          <div className="filter-row">
+            <div className="filter-field">
+              <label className="filter-label">Car Type</label>
+              <select className="filter-select" value={filterCarType} onChange={e => { setFilterCarType(e.target.value); setVisibleOrdersCount(ORDERS_BATCH_SIZE); }}>
+                <option value="">All</option>
+                {filterOptions.carTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="filter-field">
+              <label className="filter-label">Wash Type</label>
+              <select className="filter-select" value={filterWashType} onChange={e => { setFilterWashType(e.target.value); setVisibleOrdersCount(ORDERS_BATCH_SIZE); }}>
+                <option value="">All</option>
+                {filterOptions.washTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="filter-row">
+            <div className="filter-field">
+              <label className="filter-label">Car Number</label>
+              <input className="filter-input" type="text" placeholder="e.g. AP01TS4587" value={filterCarNumber} onChange={e => { setFilterCarNumber(e.target.value); setVisibleOrdersCount(ORDERS_BATCH_SIZE); }} />
+            </div>
+            <div className="filter-field">
+              <label className="filter-label">Date</label>
+              <input className="filter-input" type="date" value={filterDate} onChange={e => { setFilterDate(e.target.value); setVisibleOrdersCount(ORDERS_BATCH_SIZE); }} />
+            </div>
+          </div>
+          {activeSearchCount > 0 && (
+            <button className="filter-clear-btn" onClick={clearAllFilters}>Clear all filters</button>
+          )}
+        </div>
+      )}
 
       {/* Orders List */}
       <div className="orders-list">
         {loading && <p className="loading-message">Loading orders...</p>}
-        {error && <p className="error-message">{error}</p>}
-        {!loading && !error && orders.length === 0 && (
+        {!loading && notLoggedIn && (
+          <div className="orders-login-prompt">
+            <div className="orders-login-icon">🎉</div>
+            <h2 className="orders-login-title">Get ₹20 Off on your first order!</h2>
+            <p className="orders-login-desc">Login or signup to book your first wash and claim your discount</p>
+            <button className="orders-login-btn" onClick={() => navigate('/login', { state: { from: { pathname: '/orders' } } })}>Login / Signup</button>
+          </div>
+        )}
+        {error && !noPhone && !notLoggedIn && <p className="error-message">{error}</p>}
+        {!loading && !error && (orders.length === 0 || noPhone) && (
           <div 
-            onClick={() => navigate('/services')}
+            onClick={() => navigate('/')}
             style={{
               background: 'linear-gradient(135deg, #5E4DB2 0%, #764ba2 100%)',
               borderRadius: '15px',
@@ -239,9 +422,10 @@ const Orders = () => {
           (() => {
             const status = String(order.status || '').toLowerCase();
             const isCancelled = status === 'cancelled';
+            const isCompleted = status === 'completed';
             const isUpgraded = String(order.upgradeStatus || '').toLowerCase() === 'upgraded' || order.isUpgraded === true;
             const displayOrderCode = getOrderRef(order);
-            
+
             // Check if booking is in the future (not completed/past)
             const isFutureBooking = (() => {
               if (!order.bookingDate || !order.timeSlot) return false;
@@ -252,9 +436,9 @@ const Orders = () => {
                 return false;
               }
             })();
-            
+
             // Show upgrade button if: not cancelled, not upgraded, and is future booking
-            const isBooked = isFutureBooking && !isCancelled && !isUpgraded;
+            const isBooked = isFutureBooking && !isCancelled && !isUpgraded && !isCompleted;
 
             return (
           <div key={order.id || index} className="order-card">
@@ -263,35 +447,30 @@ const Orders = () => {
               <div className="order-details">
                 <p className="order-id">Order#: {displayOrderCode}</p>
                 <p className="order-service">{order.washType}</p>
-                <p className="order-date">{getStatusLabel(order.bookingDate, order.timeSlot)}</p>
               </div>
-              <div className="order-price">Rs.{order.payableAmount}/-</div>
+              <div className="order-service-label">{order.serviceType}</div>
             </div>
-            <div className="order-secondary-info">
-              <div className="info-row">
-                <span className="info-label">Car Type:</span>
-                <span className="info-value">{order.carType}</span>
+            <div className="order-secondary-info compact-info-block">
+              <div className="info-row-inline">
+                <span className="info-label-inline">Car Type:</span>
+                <span className="info-value-inline">{order.carType}</span>
+                <span className="info-label-inline">Car Number:</span>
+                <span className="info-value-inline">{order.carNumber}</span>
               </div>
-              <div className="info-row">
-                <span className="info-label">Car Number:</span>
-                <span className="info-value">{order.carNumber}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Service Type:</span>
-                <span className="info-value">{order.serviceType}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Booking Date:</span>
-                <span className="info-value">{order.bookingDate}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Time Slot:</span>
-                <span className="info-value">{order.timeSlot}</span>
+              <div className="info-row-inline">
+                <span className="info-label-inline">Booking Date:</span>
+                <span className="info-value-inline">{order.bookingDate}</span>
+                <span className="info-label-inline">Time Slot:</span>
+                <span className="info-value-inline">{order.timeSlot}</span>
               </div>
             </div>
             <div className="order-actions">
               {isCancelled ? (
                 <div className="cancelled-status">Cancelled</div>
+              ) : isCompleted ? (
+                <></>
+              ) : status === 'in_servicing' ? (
+                <div className="in-servicing-status">IN_SERVICING</div>
               ) : isBooked ? (
                 <button
                   className="upgrade-btn"
@@ -348,11 +527,24 @@ const Orders = () => {
                     <button
                       key={option}
                       className={`upgrade-option ${selectedUpgrade === option ? 'active' : ''}`}
-                      onClick={() => setSelectedUpgrade(option)}
+                      onClick={() => handleUpgradeOptionChange(option)}
                     >
                       {option}
                     </button>
                   ))}
+                </div>
+              )}
+
+              {selectedUpgrade && (
+                <div className="upgrade-price-diff">
+                  {priceLoading ? (
+                    <p className="upgrade-price-loading">Fetching price...</p>
+                  ) : priceDifference != null ? (
+                    <p className="upgrade-price-text">
+                      <span className="upgrade-price-label">{upgradeOrder?.washType} → {selectedUpgrade}</span>
+                      <span className="upgrade-price-value">₹{priceDifference.toLocaleString('en-IN')}</span>
+                    </p>
+                  ) : null}
                 </div>
               )}
 
@@ -361,9 +553,9 @@ const Orders = () => {
               <button
                 className="upgrade-confirm-btn"
                 onClick={handleConfirmUpgrade}
-                disabled={upgrading || upgradeOptions.length === 0 || !selectedUpgrade}
+                disabled={upgrading || upgradeOptions.length === 0 || !selectedUpgrade || priceLoading}
               >
-                {upgrading ? 'Updating...' : 'Update Booking'}
+                {upgrading ? 'Processing...' : 'Pay Now'}
               </button>
             </div>
           </div>
@@ -372,6 +564,13 @@ const Orders = () => {
 
       {/* Bottom Navigation */}
       <BottomNav active="orders" />
+
+      <PaymentMethodModal
+        open={showUpgradePayment}
+        onClose={() => { setShowUpgradePayment(false); setShowUpgradePopup(true); }}
+        onSelect={handleUpgradePaymentSelect}
+        amount={priceDifference}
+      />
     </div>
   );
 };

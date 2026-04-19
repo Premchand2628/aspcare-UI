@@ -78,7 +78,16 @@ MainApp/
 npm install
 ```
 
-2. **Start the development server**:
+2. **Configure environment variables**:
+```bash
+copy .env.example .env
+```
+Update `.env` values for your API gateway targets as needed.
+If gateway auth routes are unavailable, keep `VITE_AUTH_API_URL` pointing to the auth service (default `http://localhost:8081`).
+
+Transaction tracing is enabled through a shared `X-Transaction-Id` header on all API calls in a browser session. Use `VITE_ENABLE_REQUEST_LOGGING` to control request/response console logs.
+
+3. **Start the development server**:
 ```bash
 npm run dev
 ```

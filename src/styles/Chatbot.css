@@ -1,7 +1,8 @@
 .chatbot-page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: var(--app-height);
+  height: var(--app-height);
   background: #f8f9fa;
 }
 
@@ -9,7 +10,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: calc(16px + var(--safe-area-top)) calc(20px + var(--safe-area-right)) 16px calc(20px + var(--safe-area-left));
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-bottom: none;
   box-shadow: 0 4px 12px rgba(94, 77, 178, 0.3);
@@ -108,7 +109,9 @@
 .chatbot-container {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 60px;
+  padding-bottom: calc(72px + var(--safe-area-bottom));
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Bot Selection Menu */
@@ -117,7 +120,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: calc(100vh - 240px);
+  min-height: calc(var(--app-height) - 240px - var(--safe-area-top));
   padding: 40px 20px;
   text-align: center;
 }
@@ -661,7 +664,7 @@
 .input-container {
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 12px calc(16px + var(--safe-area-right)) calc(12px + var(--safe-area-bottom)) calc(16px + var(--safe-area-left));
   background: white;
   border-top: 1px solid #e0e0e0;
 }
@@ -671,7 +674,7 @@
   padding: 10px 12px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 16px;
   outline: none;
   transition: border-color 0.3s;
 }
@@ -703,7 +706,7 @@
 /* Responsive */
 @media (max-width: 480px) {
   .chatbot-header {
-    padding: 12px 12px;
+    padding: calc(12px + var(--safe-area-top)) calc(12px + var(--safe-area-right)) 12px calc(12px + var(--safe-area-left));
   }
 
   .chatbot-header h1 {
@@ -711,7 +714,7 @@
   }
 
   .bot-menu {
-    height: calc(100vh - 200px);
+    min-height: calc(var(--app-height) - 200px - var(--safe-area-top));
     padding: 30px 16px;
   }
 
@@ -837,4 +840,30 @@
     font-size: 12px;
   }
 
+}
+
+@media (min-width: 768px) {
+  .chatbot-header { padding: calc(20px + var(--safe-area-top)) calc(24px + var(--safe-area-right)) 20px calc(24px + var(--safe-area-left)); }
+  .chatbot-header h1 { font-size: 20px; }
+  .bot-menu { padding: 40px 24px; }
+  .menu-greeting h2 { font-size: 32px; }
+  .menu-greeting p { font-size: 16px; }
+  .bot-options { max-width: 500px; }
+  .bot-option { padding: 22px; gap: 10px; }
+  .bot-icon { font-size: 36px; }
+  .bot-name { font-size: 18px; }
+  .bot-desc { font-size: 14px; }
+  .chat-header { padding: 16px; }
+  .chat-header h2 { font-size: 18px; }
+  .messages-container { padding: 20px; gap: 14px; }
+  .message { max-width: 70%; }
+  .message p { padding: 14px; font-size: 15px; }
+  .option-btn { padding: 12px 16px; font-size: 15px; }
+  .input-container { padding: 14px 18px; gap: 10px; }
+  .input-container input { padding: 10px 14px; font-size: 15px; }
+  .send-btn { padding: 10px 20px; font-size: 15px; }
+  .rollers-group { grid-template-columns: repeat(2, 1fr); }
+  .calendar-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .calendar-btn { padding: 12px 8px; min-height: 70px; }
+  .options-group.timeslots-grid { grid-template-columns: repeat(3, 1fr); }
 }

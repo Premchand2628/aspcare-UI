@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import BottomNav from '../components/BottomNav';
+import { withAuthHeader } from '../utils/auth';
+import { readCache, writeCache, CACHE_KEYS } from '../utils/refDataCache';
 import '../styles/SelectCenter.css';
 
 const normalizeServiceType = (value) => {
@@ -10,6 +13,94 @@ const normalizeServiceType = (value) => {
   return normalized || 'SELF_DRIVE';
 };
 
+const normalizeKeyText = (value) => String(value || '').trim().toUpperCase().replace(/\s+/g, ' ');
+
+const formatDateDisplay = (value) => {
+  if (!value) return '';
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  const day = String(parsed.getDate()).padStart(2, '0');
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const month = months[parsed.getMonth()];
+  const year = parsed.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
+const toNumber = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const extractCoordinatesFromCentre = (centre) => {
+  const directLat = toNumber(centre?.lat ?? centre?.latitude);
+  const directLng = toNumber(centre?.lng ?? centre?.longitude ?? centre?.lon);
+  if (directLat !== null && directLng !== null) {
+    return { lat: directLat, lng: directLng };
+  }
+
+  const mapsUrl = String(centre?.maps_url || centre?.mapsUrl || centre?.mapsURL || '').trim();
+  if (!mapsUrl) return null;
+
+  const atPattern = mapsUrl.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (atPattern) {
+    return {
+      lat: Number(atPattern[1]),
+      lng: Number(atPattern[2])
+    };
+  }
+
+  const queryPattern = mapsUrl.match(/[?&](?:q|query|ll)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
+  if (queryPattern) {
+    return {
+      lat: Number(queryPattern[1]),
+      lng: Number(queryPattern[2])
+    };
+  }
+
+  const genericPattern = mapsUrl.match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+  if (genericPattern) {
+    return {
+      lat: Number(genericPattern[1]),
+      lng: Number(genericPattern[2])
+    };
+  }
+
+  return null;
+};
+
+const toRadians = (degrees) => (degrees * Math.PI) / 180;
+
+const calculateDistanceKm = (from, to) => {
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(to.lat - from.lat);
+  const dLng = toRadians(to.lng - from.lng);
+  const lat1 = toRadians(from.lat);
+  const lat2 = toRadians(to.lat);
+
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+};
+
+const formatDistance = (distanceKm) => {
+  if (distanceKm === null || distanceKm === undefined || !Number.isFinite(distanceKm)) {
+    return '';
+  }
+  if (distanceKm < 1) {
+    return `${Math.round(distanceKm * 1000)} m`;
+  }
+  return `${distanceKm.toFixed(1)} km`;
+};
+
+const getCentreMapsUrl = (centre) => {
+  const raw = String(centre?.maps_url || centre?.mapsUrl || centre?.mapsURL || '').trim();
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw}`;
+};
+
 const SelectCenter = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,14 +108,46 @@ const SelectCenter = () => {
   const serviceType = normalizeServiceType(location.state?.serviceType || subscription?.serviceType || 'SELF_DRIVE');
   const [areas, setAreas] = useState([]);
   const [selectedArea, setSelectedArea] = useState('');
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   const [centres, setCentres] = useState([]);
   const [loadingAreas, setLoadingAreas] = useState(true);
   const [loadingCentres, setLoadingCentres] = useState(false);
   const [selectedCentre, setSelectedCentre] = useState(null);
+  const [centreSlotCounts, setCentreSlotCounts] = useState({});
+  const [loadingSlotCounts, setLoadingSlotCounts] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const centresListRef = useRef(null);
 
   // Fetch areas on component mount
   useEffect(() => {
     fetchAreas();
+  }, []);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+      },
+      () => {
+        setUserLocation(null);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 120000
+      }
+    );
   }, []);
 
   // Fetch centres when area is selected
@@ -32,18 +155,24 @@ const SelectCenter = () => {
     if (selectedArea) {
       fetchCentres(selectedArea);
     }
-  }, [selectedArea]);
+  }, [selectedArea, selectedDate]);
+
+  useEffect(() => {
+    if (!selectedArea || loadingCentres) return;
+    const timer = setTimeout(() => {
+      centresListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [selectedArea, loadingCentres, centres.length]);
 
   const fetchAreas = async () => {
+    const cached = readCache(CACHE_KEYS.AREAS);
+    if (cached) { setAreas(cached); setLoadingAreas(false); return; }
     try {
       setLoadingAreas(true);
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
       
       const response = await fetch('/centres/areas', {
         method: 'GET',
@@ -52,6 +181,7 @@ const SelectCenter = () => {
       if (response.ok) {
         const data = await response.json();
         setAreas(data);
+        writeCache(CACHE_KEYS.AREAS, data);
       } else {
         console.error('Failed to fetch areas');
       }
@@ -63,15 +193,19 @@ const SelectCenter = () => {
   };
 
   const fetchCentres = async (area) => {
+    const cacheKey = CACHE_KEYS.CENTRES + ':' + area.toLowerCase();
+    const cached = readCache(cacheKey);
+    if (cached) {
+      setCentres(cached);
+      fetchCentreSlotCounts(cached);
+      setLoadingCentres(false);
+      return;
+    }
     try {
       setLoadingCentres(true);
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
       
       const response = await fetch(`/centres/search?area=${encodeURIComponent(area)}`, {
         method: 'GET',
@@ -79,16 +213,149 @@ const SelectCenter = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setCentres(data);
+        const normalizedCentres = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.content)
+            ? data.content
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
+        setCentres(normalizedCentres);
+        writeCache(cacheKey, normalizedCentres);
+        fetchCentreSlotCounts(normalizedCentres);
       } else {
         setCentres([]);
+        setCentreSlotCounts({});
         console.error('Failed to fetch centres');
       }
     } catch (error) {
       console.error('Error fetching centres:', error);
       setCentres([]);
+      setCentreSlotCounts({});
     } finally {
       setLoadingCentres(false);
+    }
+  };
+
+  const getCentreId = (centre) => centre?.id ?? centre?.centreId ?? centre?.serviceCentreId ?? null;
+
+  const getCentreName = (centre) => String(centre?.name ?? centre?.centreName ?? '').trim();
+
+  const getCentreAddress = (centre) => String(centre?.address ?? centre?.centreAddress ?? '').trim();
+
+  const getCentreKey = (centre) => {
+    const centreId = getCentreId(centre);
+    if (centreId !== null && centreId !== undefined) return `id:${centreId}`;
+    const normalizedName = normalizeKeyText(getCentreName(centre));
+    const normalizedAddress = normalizeKeyText(getCentreAddress(centre));
+    return `name:${normalizedName}|addr:${normalizedAddress}`;
+  };
+
+  const appendCentreIdentityParams = (params, centre) => {
+    const centreId = getCentreId(centre);
+    const centreName = getCentreName(centre);
+    const centreAddress = getCentreAddress(centre);
+
+    if (centreId !== null && centreId !== undefined) {
+      params.set('serviceCentreId', String(centreId));
+    }
+    if (centreName) {
+      params.set('centreName', centreName);
+    }
+    if (centreAddress) {
+      params.set('centreAddress', centreAddress);
+    }
+  };
+
+  const buildAvailabilityParamStrategies = (centre, date) => {
+    const base = { date, serviceType };
+    const centreId = getCentreId(centre);
+    const centreName = getCentreName(centre);
+    const centreAddress = getCentreAddress(centre);
+    const strategies = [];
+
+    const full = new URLSearchParams(base);
+    appendCentreIdentityParams(full, centre);
+    strategies.push(full);
+
+    if (centreId !== null && centreId !== undefined) {
+      const idOnly = new URLSearchParams(base);
+      idOnly.set('serviceCentreId', String(centreId));
+      strategies.push(idOnly);
+    }
+
+    if (centreName) {
+      const nameOnly = new URLSearchParams(base);
+      nameOnly.set('centreName', centreName);
+      strategies.push(nameOnly);
+    }
+
+    if (centreAddress) {
+      const addressOnly = new URLSearchParams(base);
+      addressOnly.set('centreAddress', centreAddress);
+      strategies.push(addressOnly);
+    }
+
+    return strategies;
+  };
+
+  const fetchAvailabilityWithFallback = async (headers, centre, date) => {
+    const strategies = buildAvailabilityParamStrategies(centre, date);
+
+    for (let index = 0; index < strategies.length; index += 1) {
+      const params = strategies[index];
+      const response = await fetch(`/bookings/availability?${params.toString()}`, {
+        method: 'GET',
+        headers
+      });
+
+      if (!response.ok) {
+        const shouldTryFallback = response.status === 403 && index < strategies.length - 1;
+        if (shouldTryFallback) {
+          continue;
+        }
+        return null;
+      }
+
+      const data = await response.json();
+      return Object.values(data || {}).filter(Boolean).length;
+    }
+
+    return null;
+  };
+
+  const fetchCentreSlotCounts = async (centresList) => {
+    if (!Array.isArray(centresList) || centresList.length === 0) {
+      setCentreSlotCounts({});
+      return;
+    }
+
+    setLoadingSlotCounts(true);
+    try {
+      const headers = withAuthHeader({
+        Accept: 'application/json'
+      });
+      const date = selectedDate;
+
+      const responses = await Promise.all(
+        centresList.map(async (centre) => {
+          const key = getCentreKey(centre);
+          try {
+            const availableCount = await fetchAvailabilityWithFallback(headers, centre, date);
+            return { key, count: availableCount };
+          } catch {
+            return { key, count: null };
+          }
+        })
+      );
+
+      const nextCounts = {};
+      responses.forEach(({ key, count }) => {
+        nextCounts[key] = count;
+      });
+      setCentreSlotCounts(nextCounts);
+    } finally {
+      setLoadingSlotCounts(false);
     }
   };
 
@@ -99,72 +366,160 @@ const SelectCenter = () => {
         selectedCentre: centre,
         serviceType,
         subscription,
-        source: location.state?.source || null
+        source: location.state?.source || null,
+        prefilledCarType: location.state?.prefilledCarType || null
       }
     });
   };
 
+  const getCentreDistance = (centre) => {
+    if (!userLocation) return null;
+    const centreCoords = extractCoordinatesFromCentre(centre);
+    if (!centreCoords) return null;
+    return calculateDistanceKm(userLocation, centreCoords);
+  };
+
+  const renderCentreLocation = (centre) => {
+    const distanceText = formatDistance(getCentreDistance(centre));
+    const mapsUrl = getCentreMapsUrl(centre);
+
+    const locationContent = (
+      <>
+        📍 {centre.area}
+        {distanceText ? <span className="center-distance"> • {distanceText}</span> : null}
+      </>
+    );
+
+    if (!mapsUrl) {
+      return <p className="center-location">{locationContent}</p>;
+    }
+
+    return (
+      <p className="center-location">
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="center-location-link"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {locationContent}
+        </a>
+      </p>
+    );
+  };
+
   return (
     <div className="page-container">
-      {/* Header */}
-      <header className="select-center-header">
-        <button className="back-btn" onClick={() => navigate(-1)}>←</button>
-        <h2 className="header-title">Select Service Centre</h2>
-      </header>
-
-      {/* Area Dropdown */}
-      <div className="area-selection">
-        <label className="area-label">Select Area</label>
-        <select 
-          value={selectedArea} 
-          onChange={(e) => setSelectedArea(e.target.value)}
-          className="area-dropdown"
-          disabled={loadingAreas}
-        >
-          <option value="">Choose an area...</option>
-          {areas.map((area, index) => (
-            <option key={index} value={area}>
-              {area}
-            </option>
-          ))}
-        </select>
+      <div className="select-center-ux-header">
+        <header className="select-center-header">
+          <button className="back-btn" onClick={() => navigate(-1)}>←</button>
+          <div className="header-copy">
+            <h2 className="header-title">@service-center</h2>
+          </div>
+        </header>
       </div>
 
-      {/* Loading State */}
-      {loadingCentres && (
-        <div className="loading-message">
-          Loading service centres...
-        </div>
-      )}
+      <div className="service-centre-hero">
+        <div className="area-selection area-selection-overlay">
+          <div className="center-filter-row">
+            <select
+              value={selectedArea}
+              onChange={(e) => setSelectedArea(e.target.value)}
+              className="area-dropdown"
+              disabled={loadingAreas}
+            >
+              <option value="">Choose an area...</option>
+              {areas.map((area, index) => (
+                <option key={index} value={area}>
+                  {area}
+                </option>
+              ))}
+            </select>
 
-      {/* Centres List */}
-      {selectedArea && !loadingCentres && (
-        <div className="centers-list">
-          {centres.length > 0 ? (
-            centres.map(centre => (
-              <div 
-                key={centre.id} 
-                className="center-item"
-                onClick={() => handleSelectCentre(centre)}
-              >
-                <div className="center-icon">🏢</div>
-                <div className="center-info">
-                  <h3>{centre.name}</h3>
-                  <p className="center-location">📍 {centre.area}</p>
-                  <p className="center-address">{centre.address}</p>
-                  {centre.rating && (
-                    <p className="center-rating">⭐ {centre.rating}</p>
-                  )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="no-centres-message">
-              No service centres found in {selectedArea}
-            </div>
-          )}
+            <label
+              className="center-date-icon-btn"
+              htmlFor="center-slot-date"
+              aria-label="Select date"
+              title={`Selected date: ${formatDateDisplay(selectedDate)}`}
+            >
+              <span aria-hidden="true">🗓️</span>
+              <input
+                id="center-slot-date"
+                type="date"
+                className="center-date-overlay-input"
+                value={selectedDate}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                aria-label="Select date"
+              />
+            </label>
+          </div>
+          <p className="center-filter-note">Check slot availability on preferred date &amp; location</p>
         </div>
-      )}
+
+        <div className="service-centre-banner">
+          <img src="/images/servicecentre.png" alt="Service Centre" />
+        </div>
+
+        {(loadingCentres || selectedArea) && (
+          <div className="centers-overlay-layer" ref={centresListRef}>
+            {loadingCentres ? (
+              <div className="loading-message loading-message-overlay">
+                Loading service centres...
+              </div>
+            ) : (
+              <div className="centers-list centers-list-overlay">
+                {centres.length > 0 ? (
+                  centres.map(centre => (
+                    <div 
+                      key={getCentreKey(centre)} 
+                      className="center-item"
+                      onClick={() => handleSelectCentre(centre)}
+                    >
+                      <div className="center-availability-badge">
+                        <p className="center-availability-title">Availability:</p>
+                        <p className="center-availability-slots">
+                          {(() => {
+                            const slotCount = centreSlotCounts[getCentreKey(centre)];
+                            if (loadingSlotCounts && (slotCount === undefined || slotCount === null)) {
+                              return 'Checking...';
+                            }
+                            if (slotCount === null || slotCount === undefined) {
+                              return '-- slots';
+                            }
+                            return `${slotCount} slots`;
+                          })()}
+                        </p>
+                        <p className="center-availability-date">{formatDateDisplay(selectedDate)}</p>
+                      </div>
+
+                      <div className="center-main-row">
+                        <div className="center-icon">🏢</div>
+                        <div className="center-info">
+                          <div className="center-title-row">
+                            <h3>{centre.name}</h3>
+                            {centre.rating && (
+                              <p className="center-rating">⭐ {centre.rating}</p>
+                            )}
+                          </div>
+                          {renderCentreLocation(centre)}
+                        </div>
+                      </div>
+
+                      <p className="center-address">{centre.address}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="no-centres-message no-centres-message-overlay">
+                    No service centres found in {selectedArea}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Select Button */}
       {selectedCentre && (
@@ -175,13 +530,16 @@ const SelectCenter = () => {
               selectedCentre,
               serviceType,
               subscription,
-              source: location.state?.source || null
+              source: location.state?.source || null,
+              prefilledCarType: location.state?.prefilledCarType || null
             }
           })}
         >
           Continue with {selectedCentre.name}
         </button>
       )}
+
+      <BottomNav active="none" />
     </div>
   );
 };

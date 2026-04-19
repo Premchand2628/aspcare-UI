@@ -1,7 +1,8 @@
 .policy-page {
-  min-height: 100vh;
+  min-height: var(--app-height);
   background: #f8fafc;
   color: #0f172a;
+  padding-bottom: calc(20px + var(--safe-area-bottom));
 }
 
 .policy-top {
@@ -10,7 +11,7 @@
   z-index: 10;
   background: #0f172a;
   color: #fff;
-  padding: 14px 16px;
+  padding: calc(14px + var(--safe-area-top)) calc(16px + var(--safe-area-right)) 14px calc(16px + var(--safe-area-left));
   display: flex;
   align-items: center;
   gap: 10px;
@@ -44,7 +45,7 @@
 
 .policy-container {
   max-width: 920px;
-  margin: 20px auto 90px;
+  margin: 20px auto calc(90px + var(--safe-area-bottom));
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 16px;

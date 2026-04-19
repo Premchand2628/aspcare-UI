@@ -23,10 +23,10 @@ const BottomNav = ({ active }) => {
       </button>
       <button 
         className={`nav-item ${active === 'membership' ? 'active' : ''}`}
-        onClick={() => navigate('/membership-detail')}
+        onClick={() => navigate('/my-subscriptions')}
       >
         <span className="nav-icon">💳</span>
-        <span className="nav-label">Membership</span>
+        <span className="nav-label">Subscriptions</span>
       </button>
       <button 
         className={`nav-item ${active === 'profile' ? 'active' : ''}`}

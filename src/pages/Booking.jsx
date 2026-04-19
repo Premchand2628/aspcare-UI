@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getStoredPhone, toApiServiceType, toApiWaterProvidedBoolean } from '../utils/apiMappers';
+import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
+import { readCache, writeCache, CACHE_KEYS } from '../utils/refDataCache';
 import '../styles/Booking.css';
 
 const normalizeText = (value) => String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
-
-const normalizeServiceType = (value) => {
-  const normalized = normalizeText(value);
-  if (normalized === 'SELFDRIVE' || normalized === 'SELF_DRIVE') return 'SELF_DRIVE';
-  if (normalized === 'HOME') return 'HOME';
-  return normalized || 'HOME';
-};
 
 const normalizeCarType = (value) => {
   const normalized = normalizeText(value);
@@ -25,46 +21,61 @@ const normalizeWashType = (value) => {
   return 'Foam';
 };
 
-const normalizeWaterProvided = (value) => (String(value || '').trim().toUpperCase() === 'Y' ? 'Y' : 'N');
-
-const getStoredPhone = () => {
-  const possibleKeys = ['phone', 'userPhone', 'mobileNumber', 'mobile', 'contact'];
-  for (const key of possibleKeys) {
-    const value = localStorage.getItem(key);
-    if (value && value.trim()) {
-      return value.trim();
-    }
-  }
-  return '';
+const normalizeServiceType = (value) => {
+  const normalized = String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
+  if (normalized === 'SELFDRIVE') return 'SELF_DRIVE';
+  if (normalized === 'SELF DRIVE') return 'SELF_DRIVE';
+  if (normalized === 'HOME') return 'HOME';
+  return normalized || 'SELF_DRIVE';
 };
+
+const formatVehicleTypeLabel = (value) => String(value || '')
+  .trim()
+  .replace(/_/g, ' ')
+  .toLowerCase()
+  .replace(/\b\w/g, (char) => char.toUpperCase());
+
 
 const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [selectedVehicle, setSelectedVehicle] = useState('HATCHBACK');
-  const [washType, setWashType] = useState('Foam');
+  const selectedSubscription = location.state?.subscription || null;
+  const prefilledCarType = location.state?.prefilledCarType || '';
+  const initialVehicle = selectedSubscription ? normalizeCarType(selectedSubscription.carType) : normalizeCarType(prefilledCarType);
+  const initialWashType = selectedSubscription ? normalizeWashType(selectedSubscription.washType) : '';
+
+  // Restore saved booking state if returning from /review (no location.state)
+  const savedBooking = (!location.state && sessionStorage.getItem('bookingFormState'))
+    ? JSON.parse(sessionStorage.getItem('bookingFormState'))
+    : null;
+
+  const [selectedVehicle, setSelectedVehicle] = useState(savedBooking?.selectedVehicle || initialVehicle);
+  const [washType, setWashType] = useState(savedBooking?.washType || initialWashType);
   const [locationPermission, setLocationPermission] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
-  const [searchAddress, setSearchAddress] = useState('KIMS Hospital, Old Bombay Highway, Ward 104 K');
+  const [searchAddress, setSearchAddress] = useState(savedBooking?.searchAddress || 'KIMS Hospital, Old Bombay Highway, Ward 104 K');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedCentre, setSelectedCentre] = useState(location.state?.selectedCentre || null);
-  const [centreName, setCentreName] = useState('Home');
+  const [selectedCentre, setSelectedCentre] = useState(savedBooking?.selectedCentre || location.state?.selectedCentre || null);
+  const [centreName, setCentreName] = useState(savedBooking?.centreName || 'Home');
   const mapRef = React.useRef(null);
   const mapInstanceRef = React.useRef(null);
   const markerRef = React.useRef(null);
   const dateInputRef = React.useRef(null);
+  const vehicleSwipeStartXRef = React.useRef(null);
+  const vehicleSwipeStartYRef = React.useRef(null);
+  const vehicleSwipeSuppressClickUntilRef = React.useRef(0);
   
   // Calendar and time slot states
   const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(savedBooking?.selectedDate ? new Date(savedBooking.selectedDate) : null);
   const [showTimeSlots, setShowTimeSlots] = useState(false);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState(savedBooking?.selectedTimeSlot || '');
   const [availability, setAvailability] = useState(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
-  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState(savedBooking?.vehicleNumber || '');
   const [vehicleNumberError, setVehicleNumberError] = useState('');
-  const [waterOption, setWaterOption] = useState('no-thanks');
+  const [waterOption, setWaterOption] = useState(savedBooking?.waterOption || 'no-thanks');
   const [rate, setRate] = useState({ amount: null, currency: 'INR' });
   const [rateLoading, setRateLoading] = useState(false);
   const [rateError, setRateError] = useState('');
@@ -72,10 +83,20 @@ const Booking = () => {
   const [subscriptionValidationLoading, setSubscriptionValidationLoading] = useState(false);
   const [subscriptionValidated, setSubscriptionValidated] = useState(false);
   const [subscriptionValidationError, setSubscriptionValidationError] = useState('');
+  const [showWaterTermsInfo, setShowWaterTermsInfo] = useState(false);
+  const [showWaterTermsConfirm, setShowWaterTermsConfirm] = useState(false);
+  const [waterTermsChecked, setWaterTermsChecked] = useState(false);
+  const [vehicleSlideIndex, setVehicleSlideIndex] = useState(0);
+  const [showDefaultPrefillPrompt, setShowDefaultPrefillPrompt] = useState(false);
+  const [applyingDefaultPrefill, setApplyingDefaultPrefill] = useState(false);
+  const [prefillApplied, setPrefillApplied] = useState(false);
+  const [dynamicVehicleTypes, setDynamicVehicleTypes] = useState([]);
+  const [dynamicWashTypes, setDynamicWashTypes] = useState([]);
 
-  const selectedSubscription = location.state?.subscription || null;
   const isSubscriptionFlow = Boolean(selectedSubscription);
   const isSubscriptionApplied = isSubscriptionFlow && subscriptionValidated;
+  const isFromMySubscriptions = location.state?.source === 'my-subscriptions';
+  const isSubscriptionSelectionLocked = isFromMySubscriptions && isSubscriptionFlow;
 
   // Generate time slots from 7AM to 7PM
   const timeSlots = [
@@ -83,6 +104,46 @@ const Booking = () => {
     '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00',
     '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00'
   ];
+
+  const VEHICLE_META = {
+    HATCHBACK: { desc: 'Compact car', icon: '🚗' },
+    SEDAN: { desc: 'Standard car', icon: '🚗' },
+    SUV: { desc: 'Sport Utility Vehicle', icon: '🚙' },
+    MPV: { desc: 'Multi-Purpose Vehicle', icon: '🚙' },
+    PICKUP: { desc: 'Pickup truck', icon: '🛻' },
+    BIKE: { desc: 'Motorcycle', icon: '🏍️' },
+  };
+
+  useEffect(() => {
+    const fetchVehicleTypes = async () => {
+      const cached = readCache(CACHE_KEYS.VEHICLE_TYPES);
+      if (cached) { setDynamicVehicleTypes(cached); return; }
+      try {
+        const res = await fetch('/rates/vehicle-types');
+        if (!res.ok) return;
+        const data = await res.json();
+        const mapped = data.map((v) => ({
+          id: v, name: v, desc: VEHICLE_META[v]?.desc || v, icon: VEHICLE_META[v]?.icon || '🚗'
+        }));
+        setDynamicVehicleTypes(mapped);
+        writeCache(CACHE_KEYS.VEHICLE_TYPES, mapped);
+      } catch { /* keep empty */ }
+    };
+    const fetchWashTypes = async () => {
+      const cached = readCache(CACHE_KEYS.WASH_LEVELS);
+      if (cached) { setDynamicWashTypes(cached); return; }
+      try {
+        const res = await fetch('/rates/wash-levels');
+        if (!res.ok) return;
+        const data = await res.json();
+        const mapped = data.map((w) => w.charAt(0) + w.slice(1).toLowerCase());
+        setDynamicWashTypes(mapped);
+        writeCache(CACHE_KEYS.WASH_LEVELS, mapped);
+      } catch { /* keep empty */ }
+    };
+    fetchVehicleTypes();
+    fetchWashTypes();
+  }, []);
 
   const formatDate = (date) => {
     if (!date) return '';
@@ -115,7 +176,7 @@ const Booking = () => {
       || selectedCentre?.service_type
       || selectedCentre?.service
       || 'HOME';
-    return normalizeServiceType(raw);
+    return toApiServiceType(raw);
   };
 
   const parseLocalDate = (value) => {
@@ -125,6 +186,67 @@ const Booking = () => {
   };
 
   const resolvedServiceType = resolveServiceType();
+  const isHomeService = resolvedServiceType === 'HOME';
+  const selectedCentreId = selectedCentre?.id ?? selectedCentre?.centreId ?? selectedCentre?.serviceCentreId ?? null;
+  const selectedCentreAddress = String(selectedCentre?.address ?? selectedCentre?.centreAddress ?? '').trim();
+
+  const buildAvailabilityParamStrategies = (dateParam, serviceType) => {
+    const base = { date: dateParam, serviceType };
+    const strategies = [new URLSearchParams(base)];
+
+    if (!isHomeService) {
+      const full = new URLSearchParams(base);
+      if (selectedCentreId !== null && selectedCentreId !== undefined) {
+        full.set('serviceCentreId', String(selectedCentreId));
+      }
+      if (centreName && centreName !== 'Home') {
+        full.set('centreName', centreName);
+      }
+      if (selectedCentreAddress) {
+        full.set('centreAddress', selectedCentreAddress);
+      }
+      strategies.unshift(full);
+
+      if (selectedCentreId !== null && selectedCentreId !== undefined) {
+        const idOnly = new URLSearchParams(base);
+        idOnly.set('serviceCentreId', String(selectedCentreId));
+        strategies.push(idOnly);
+      }
+
+      if (centreName && centreName !== 'Home') {
+        const nameOnly = new URLSearchParams(base);
+        nameOnly.set('centreName', centreName);
+        strategies.push(nameOnly);
+      }
+    }
+
+    return strategies;
+  };
+
+  const fetchAvailabilityWithFallback = async (headers, dateParam, serviceType) => {
+    const strategies = buildAvailabilityParamStrategies(dateParam, serviceType);
+
+    for (let index = 0; index < strategies.length; index += 1) {
+      const params = strategies[index];
+      const response = await fetch(`/bookings/availability?${params.toString()}`, {
+        method: 'GET',
+        headers
+      });
+
+      if (!response.ok) {
+        const shouldTryFallback = response.status === 403 && index < strategies.length - 1;
+        if (shouldTryFallback) {
+          continue;
+        }
+        return null;
+      }
+
+      const data = await response.json();
+      return normalizeAvailability(data);
+    }
+
+    return null;
+  };
 
   const handleDateSelect = (date) => {
     if (!date) return;
@@ -191,12 +313,14 @@ const Booking = () => {
         return allFalse;
       }
 
+      // Backend returns { "08:00-09:00": true, ... } — use its slots directly
       const keys = Object.keys(data);
       if (keys.length) {
+        const result = new Map();
         keys.forEach((slot) => {
-          if (slot in base) base[slot] = Boolean(data[slot]);
+          result.set(slot, Boolean(data[slot]));
         });
-        return base;
+        return Object.fromEntries(result);
       }
     }
 
@@ -208,26 +332,93 @@ const Booking = () => {
     setShowCalendar(true);
   };
 
-  const fetchAvailability = async (date, serviceType) => {
-    setLoadingSlots(true);
-    try {
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
-        Accept: 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+  const normalizeDefaultFlag = (rawFlag) => {
+    const normalized = String(rawFlag ?? '').trim().toUpperCase();
+    return normalized === 'Y' || normalized === 'YES' || normalized === 'TRUE' || normalized === '1';
+  };
 
-      const dateParam = formatDateForApi(date);
-      const response = await fetch(`/bookings/availability?date=${dateParam}&serviceType=${serviceType}`, {
+  const getProfilePayload = (responseBody) => {
+    if (!responseBody || typeof responseBody !== 'object') return {};
+    return responseBody.data && typeof responseBody.data === 'object'
+      ? responseBody.data
+      : responseBody;
+  };
+
+  const fetchUserProfileDefaults = async () => {
+    const headers = withAuthHeader({
+      Accept: 'application/json'
+    });
+
+    let payload = null;
+
+    try {
+      const response = await fetch('/users/profile', {
         method: 'GET',
         headers
       });
 
       if (response.ok) {
         const data = await response.json();
-        setAvailability(normalizeAvailability(data));
+        payload = getProfilePayload(data);
+      }
+    } catch {
+      // Profile fetch failed
+    }
+
+    if (!payload) return null;
+
+    const defaultFlagRaw = payload?.carAddressDefaultFlag
+      ?? payload?.car_address_default_flag
+      ?? payload?.car__address_default_flag
+      ?? payload?.defaultFlag
+      ?? payload?.carAddressDefaultFlagYn
+      ?? 'N';
+
+    return {
+      hasDefaultAddress: normalizeDefaultFlag(defaultFlagRaw),
+      address: String(payload?.address ?? payload?.carAddress ?? payload?.userAddress ?? '').trim(),
+      carNumber: String(payload?.carNumber ?? payload?.car_number ?? payload?.carNo ?? payload?.vehicleNumber ?? '').trim()
+    };
+  };
+
+  const applyDefaultAddressAndCarNumber = async () => {
+    setApplyingDefaultPrefill(true);
+    try {
+      const profileDefaults = await fetchUserProfileDefaults();
+      if (!profileDefaults) {
+        setShowDefaultPrefillPrompt(false);
+        return;
+      }
+
+      if (profileDefaults.address) {
+        setSearchAddress(profileDefaults.address);
+      }
+
+      if (profileDefaults.carNumber) {
+        setVehicleNumber(profileDefaults.carNumber.toUpperCase());
+        setPrefillApplied(true);
+      }
+
+      setShowDefaultPrefillPrompt(false);
+    } catch (error) {
+      console.error('Error applying default booking details:', error);
+      setShowDefaultPrefillPrompt(false);
+    } finally {
+      setApplyingDefaultPrefill(false);
+    }
+  };
+
+  const fetchAvailability = async (date, serviceType) => {
+    setLoadingSlots(true);
+    try {
+      const headers = withAuthHeader({
+        Accept: 'application/json'
+      });
+
+      const dateParam = formatDateForApi(date);
+      const availabilityData = await fetchAvailabilityWithFallback(headers, dateParam, serviceType);
+      if (availabilityData) {
+        setAvailability(availabilityData);
         return;
       }
 
@@ -241,11 +432,18 @@ const Booking = () => {
   };
 
   useEffect(() => {
-    // Only request location permission if no centre is pre-selected
-    if (!selectedCentre) {
+    // Request location only for @Home flow and when no centre is pre-selected
+    if (isHomeService && !selectedCentre) {
       requestLocationPermission();
     }
-  }, []);
+  }, [isHomeService, selectedCentre]);
+
+  useEffect(() => {
+    if (!isHomeService) {
+      setShowSuggestions(false);
+      setSuggestions([]);
+    }
+  }, [isHomeService]);
 
   useEffect(() => {
     if (!showCalendar) return;
@@ -257,6 +455,38 @@ const Booking = () => {
     }, 0);
     return () => clearTimeout(timer);
   }, [showCalendar]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const checkDefaultPrefillFlag = async () => {
+      try {
+        const profileDefaults = await fetchUserProfileDefaults();
+        if (isCancelled) return;
+
+        if (!profileDefaults) {
+          setShowDefaultPrefillPrompt(false);
+          return;
+        }
+
+        if (isHomeService && profileDefaults.hasDefaultAddress) {
+          setShowDefaultPrefillPrompt(true);
+          return;
+        }
+
+        setShowDefaultPrefillPrompt(false);
+      } catch (error) {
+        console.error('Error checking default prefill flag:', error);
+        setShowDefaultPrefillPrompt(false);
+      }
+    };
+
+    checkDefaultPrefillFlag();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isHomeService]);
 
   // Populate address and map if centre is selected from SelectCenter page
   useEffect(() => {
@@ -285,7 +515,7 @@ const Booking = () => {
       setSelectedVehicle(normalizedCarType);
     }
     setWashType(normalizedWashType);
-    setWaterOption(normalizeWaterProvided(selectedSubscription.waterProvided) === 'Y' ? 'give-water' : 'no-thanks');
+    setWaterOption(toApiWaterProvidedBoolean(selectedSubscription.waterProvided) ? 'give-water' : 'no-thanks');
   }, [selectedSubscription]);
 
   useEffect(() => {
@@ -305,15 +535,11 @@ const Booking = () => {
           return;
         }
 
-        const authToken = localStorage.getItem('authToken');
-        const headers = {
+        const headers = withAuthHeader({
           Accept: 'application/json'
-        };
-        if (authToken) {
-          headers.Authorization = `Bearer ${authToken}`;
-        }
+        });
 
-        const response = await fetch(`/memberships/deal-price-bookings/by-phone?phone=${encodeURIComponent(phone)}`, {
+        const response = await fetch('/memberships/deal-price-bookings/me', {
           method: 'GET',
           headers
         });
@@ -375,13 +601,9 @@ const Booking = () => {
           washLevel: washType.toUpperCase()
         });
 
-        const authToken = localStorage.getItem('authToken');
-        const headers = {
+        const headers = withAuthHeader({
           Accept: 'application/json'
-        };
-        if (authToken) {
-          headers.Authorization = `Bearer ${authToken}`;
-        }
+        });
 
         const response = await fetch(`/rates?${params.toString()}`, {
           method: 'GET',
@@ -542,6 +764,8 @@ const Booking = () => {
   };
 
   const handleAddressChange = async (e) => {
+    if (!isHomeService) return;
+
     const address = e.target.value;
     setSearchAddress(address);
     
@@ -569,6 +793,8 @@ const Booking = () => {
   };
 
   const handleSuggestionClick = (suggestion) => {
+    if (!isHomeService) return;
+
     setSearchAddress(suggestion.display_name);
     setSuggestions([]);
     setShowSuggestions(false);
@@ -578,7 +804,7 @@ const Booking = () => {
     updateMapLocation(lat, lng);
   };
 
-  const vehicleTypes = [
+  const vehicleTypes = dynamicVehicleTypes.length > 0 ? dynamicVehicleTypes : [
     { id: 'HATCHBACK', name: 'HATCHBACK', desc: 'Compact car', icon: '🚗' },
     { id: 'SEDAN', name: 'SEDAN', desc: 'Standard car', icon: '🚗' },
     { id: 'SUV', name: 'SUV', desc: 'Sport Utility Vehicle', icon: '🚙' },
@@ -586,6 +812,32 @@ const Booking = () => {
     { id: 'PICKUP', name: 'PICKUP', desc: 'Pickup truck', icon: '🛻' },
     { id: 'BIKE', name: 'BIKE', desc: 'Motorcycle', icon: '🏍️' }
   ];
+
+  const VEHICLES_PER_SLIDE = 3;
+  const vehiclePages = [];
+  for (let index = 0; index < vehicleTypes.length; index += VEHICLES_PER_SLIDE) {
+    vehiclePages.push(vehicleTypes.slice(index, index + VEHICLES_PER_SLIDE));
+  }
+
+  const vehicleSelectionTitle = selectedVehicle
+    ? `selected car type: ${formatVehicleTypeLabel(selectedVehicle)}`
+    : 'select your car type:';
+
+  useEffect(() => {
+    const idx = vehicleTypes.findIndex((vehicle) => vehicle.id === selectedVehicle);
+    if (idx >= 0) {
+      setVehicleSlideIndex(Math.floor(idx / VEHICLES_PER_SLIDE));
+    }
+  }, [selectedVehicle]);
+
+  useEffect(() => {
+    if (!isHomeService) {
+      setWaterOption('no-thanks');
+      setShowWaterTermsInfo(false);
+      setShowWaterTermsConfirm(false);
+      setWaterTermsChecked(false);
+    }
+  }, [isHomeService]);
 
   const formatRate = (amount, currency) => {
     if (amount === null || amount === undefined) return 'N/A';
@@ -600,40 +852,127 @@ const Booking = () => {
     }
   };
 
+  const getPriceDisplayValue = () => {
+    if (isSubscriptionFlow) return formatRate(0, 'INR');
+    if (rateLoading || subscriptionValidationLoading) return 'Loading...';
+    if (!selectedVehicle && !washType) return 'Select wash and car type for price';
+    if (!selectedVehicle) return 'Select car type for price';
+    if (!washType) return 'Select wash type for price';
+    return formatRate(finalPrice, rate.currency);
+  };
+
+  const isPriceHint = !selectedVehicle || !washType;
+
   const slotsToRender = availability
     ? Object.entries(availability)
     : timeSlots.map((slot) => [slot, false]);
 
+  const handleVehicleSwipeStart = (event) => {
+    const touch = event.changedTouches?.[0];
+    if (!touch) return;
+    vehicleSwipeStartXRef.current = touch.clientX;
+    vehicleSwipeStartYRef.current = touch.clientY;
+  };
+
+  const handleVehicleSwipeEnd = (event) => {
+    const touch = event.changedTouches?.[0];
+    if (!touch || vehicleSwipeStartXRef.current === null || vehicleSwipeStartYRef.current === null) {
+      return;
+    }
+
+    const deltaX = touch.clientX - vehicleSwipeStartXRef.current;
+    const deltaY = touch.clientY - vehicleSwipeStartYRef.current;
+    const swipeThreshold = 40;
+
+    vehicleSwipeStartXRef.current = null;
+    vehicleSwipeStartYRef.current = null;
+
+    if (Math.abs(deltaX) < swipeThreshold || Math.abs(deltaX) < Math.abs(deltaY)) {
+      return;
+    }
+
+    vehicleSwipeSuppressClickUntilRef.current = Date.now() + 180;
+
+    if (deltaX < 0) {
+      setVehicleSlideIndex((prev) => Math.min(prev + 1, vehiclePages.length - 1));
+      return;
+    }
+
+    setVehicleSlideIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleVehicleMouseDown = (event) => {
+    if (event.button !== 0) return;
+    vehicleSwipeStartXRef.current = event.clientX;
+    vehicleSwipeStartYRef.current = event.clientY;
+  };
+
+  const handleVehicleMouseUp = (event) => {
+    if (vehicleSwipeStartXRef.current === null || vehicleSwipeStartYRef.current === null) {
+      return;
+    }
+
+    const deltaX = event.clientX - vehicleSwipeStartXRef.current;
+    const deltaY = event.clientY - vehicleSwipeStartYRef.current;
+    const swipeThreshold = 35;
+
+    vehicleSwipeStartXRef.current = null;
+    vehicleSwipeStartYRef.current = null;
+
+    if (Math.abs(deltaX) < swipeThreshold || Math.abs(deltaX) < Math.abs(deltaY)) {
+      return;
+    }
+
+    vehicleSwipeSuppressClickUntilRef.current = Date.now() + 220;
+
+    if (deltaX < 0) {
+      setVehicleSlideIndex((prev) => Math.min(prev + 1, vehiclePages.length - 1));
+      return;
+    }
+
+    setVehicleSlideIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleVehicleMouseLeave = () => {
+    vehicleSwipeStartXRef.current = null;
+    vehicleSwipeStartYRef.current = null;
+  };
+
+  const waterTermsText = 'User has to provide near by tap for water and electricty board for service.';
+
+  const handleWaterOptionSelect = (value) => {
+    if (isSubscriptionApplied) return;
+    if (value === 'give-water') {
+      setShowWaterTermsConfirm(true);
+      setWaterTermsChecked(false);
+      return;
+    }
+    setWaterOption('no-thanks');
+  };
+
+  const handleAcceptWaterTerms = () => {
+    if (!waterTermsChecked) return;
+    setWaterOption('give-water');
+    setShowWaterTermsConfirm(false);
+  };
+
+  const handleCancelWaterTerms = () => {
+    setShowWaterTermsConfirm(false);
+    setWaterTermsChecked(false);
+    setWaterOption('no-thanks');
+  };
+
   return (
     <div className="page-container">
-      {/* Back Button & Address Search Header */}
+      {/* Back Button Header */}
       <div className="booking-header">
         <button className="back-btn-absolute" onClick={() => navigate(-1)}>←</button>
-        <div className="header-address-search">
-          <span className="map-location-icon">📍</span>
-          <input 
-            type="text"
-            value={searchAddress} 
-            onChange={handleAddressChange}
-            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            className="header-address-input"
-            placeholder="Enter your location..."
-          />
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="header-suggestions-dropdown">
-              {suggestions.map((suggestion, index) => (
-                <div 
-                  key={index}
-                  className="header-suggestion-item"
-                  onClick={() => handleSuggestionClick(suggestion)}
-                >
-                  <span className="suggestion-icon">📍</span>
-                  <span className="suggestion-text">{suggestion.display_name}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {isHomeService && (
+          <div className="booking-home-banner">
+            <p><strong>100% cashback</strong> if your car is damaged</p>
+            <p><strong>Sit, book &amp; relax</strong>: we come to your home and wash with full protection</p>
+          </div>
+        )}
       </div>
 
       {/* Map Section */}
@@ -645,8 +984,17 @@ const Booking = () => {
       <div className="booking-details">
         <div className="booking-info-card">
           <div className="booking-centre">
-            <span className="centre-icon">🏢</span>
-            <span className="centre-name">{centreName}</span>
+            <div className="centre-header-row">
+              <span className="centre-icon">🏢</span>
+              <span className="centre-name">{centreName}</span>
+            </div>
+            <textarea
+              className="centre-address-input"
+              value={searchAddress}
+              onChange={(e) => setSearchAddress(e.target.value)}
+              placeholder="Enter address"
+              rows={2}
+            />
           </div>
           <div className="booking-schedule">
             <span className="schedule-icon">📅</span>
@@ -656,21 +1004,26 @@ const Booking = () => {
                 : 'Select date and time'}
             </span>
           </div>
-          <div className="booking-wash-type">
-            <span className="wash-icon">🧼</span>
-            <span>Wash:</span>
-            <select 
-              value={washType} 
-              onChange={(e) => setWashType(e.target.value)}
-              className="wash-dropdown"
-              disabled={isSubscriptionApplied}
-            >
-              <option>Foam</option>
-              <option>Basic</option>
-              <option>Premium</option>
-            </select>
-          </div>
           <button className="points-badge" onClick={() => setShowCalendar(true)}>📅</button>
+        </div>
+
+        <div className="booking-wash-type-standalone">
+          <span className="wash-label-text">{washType ? 'selected wash type:' : 'select your wash type:'}</span>
+          <div className="wash-btn-group">
+            {(dynamicWashTypes.length > 0 ? dynamicWashTypes : ['Foam', 'Basic', 'Premium']).map((type) => (
+              <button
+                key={type}
+                className={`wash-btn ${washType === type ? 'wash-btn-selected' : ''}`}
+                onClick={() => !(isSubscriptionApplied || isSubscriptionSelectionLocked) && setWashType(washType === type ? '' : type)}
+                disabled={isSubscriptionApplied || isSubscriptionSelectionLocked}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+          {isSubscriptionSelectionLocked && (
+            <p className="subscription-lock-note">Locked by subscription plan</p>
+          )}
         </div>
 
         {/* Calendar Modal */}
@@ -682,7 +1035,6 @@ const Booking = () => {
                 type="date" 
                 value={selectedDate ? formatDateForApi(selectedDate) : ''}
                 onChange={(e) => handleDateSelect(parseLocalDate(e.target.value))}
-                onClick={() => dateInputRef.current?.showPicker?.()}
                 className="date-input"
                 min={new Date().toISOString().split('T')[0]}
                 ref={dateInputRef}
@@ -729,56 +1081,169 @@ const Booking = () => {
 
         {/* Vehicle Type Selection */}
         <div className="vehicle-selection">
-          <h3>Please choose your vehicle type</h3>
+          <h3>{vehicleSelectionTitle}</h3>
+          {isSubscriptionSelectionLocked && (
+            <p className="subscription-lock-note">Locked by subscription plan</p>
+          )}
           <div className="vehicle-types">
-            {vehicleTypes.map(vehicle => (
-              <div 
-                key={vehicle.id}
-                className={`vehicle-type-card ${selectedVehicle === vehicle.id ? 'selected' : ''}`}
-                onClick={() => {
-                  if (!isSubscriptionApplied) {
-                    setSelectedVehicle(vehicle.id);
-                  }
-                }}
+            <div className="vehicle-train-window">
+              <div
+                className="vehicle-train-touch-area"
+                onTouchStart={handleVehicleSwipeStart}
+                onTouchEnd={handleVehicleSwipeEnd}
+                onMouseDown={handleVehicleMouseDown}
+                onMouseUp={handleVehicleMouseUp}
+                onMouseLeave={handleVehicleMouseLeave}
               >
-                {selectedVehicle === vehicle.id && (
-                  <div className="check-icon">✓</div>
-                )}
-                <div className="vehicle-icon">{vehicle.icon}</div>
-                <h4>{vehicle.name}</h4>
-                <p>{vehicle.desc}</p>
+              <div
+                className="vehicle-train-track"
+                style={{ transform: `translateX(-${vehicleSlideIndex * 100}%)` }}
+              >
+                {vehiclePages.map((page, pageIndex) => (
+                  <div className="vehicle-train-page" key={`vehicle-page-${pageIndex}`}>
+                    {page.map((vehicle) => (
+                      <div
+                        key={vehicle.id}
+                        className={`vehicle-type-card ${selectedVehicle === vehicle.id ? 'selected' : ''}`}
+                        onClick={() => {
+                          if (Date.now() < vehicleSwipeSuppressClickUntilRef.current) {
+                            return;
+                          }
+                          if (!isSubscriptionApplied && !isSubscriptionSelectionLocked) {
+                            setSelectedVehicle(selectedVehicle === vehicle.id ? '' : vehicle.id);
+                            if (prefillApplied) {
+                              setVehicleNumber('');
+                              setPrefillApplied(false);
+                            }
+                          }
+                        }}
+                      >
+                        <div className="vehicle-icon">
+                          {vehicle.icon}
+                          {selectedVehicle === vehicle.id && (
+                            <div className="check-icon">✓</div>
+                          )}
+                        </div>
+                        <h4>{vehicle.name}</h4>
+                        <p>{vehicle.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
-            ))}
+              </div>
+            </div>
+            <div className="vehicle-train-dots" aria-label="Vehicle slide indicator">
+              {vehiclePages.map((_, index) => (
+                <button
+                  key={`vehicle-dot-${index}`}
+                  type="button"
+                  className={`vehicle-train-dot ${vehicleSlideIndex === index ? 'active' : ''}`}
+                  onClick={() => {
+                    setVehicleSlideIndex(index);
+                  }}
+                  aria-label={`Go to vehicle slide ${index + 1}`}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Water Discount Option */}
-        <div className="water-option-section">
-          <div className="water-option">
-            <input
-              type="radio"
-              id="give-water"
-              name="water"
-              value="give-water"
-              checked={waterOption === 'give-water'}
-              onChange={(e) => setWaterOption(e.target.value)}
-              disabled={isSubscriptionApplied}
-            />
-            <label htmlFor="give-water">Get flat $100 by giving water</label>
+        {isHomeService && !isSubscriptionApplied && (
+          <div className="water-option-section">
+            <div className="water-option">
+              <input
+                type="radio"
+                id="give-water"
+                name="water"
+                value="give-water"
+                checked={waterOption === 'give-water'}
+                onChange={(e) => handleWaterOptionSelect(e.target.value)}
+                disabled={isSubscriptionApplied}
+              />
+              <label htmlFor="give-water">Get flat $100 by giving water</label>
+              <button
+                type="button"
+                className="water-help-btn"
+                aria-label="View water offer terms and conditions"
+                onClick={() => setShowWaterTermsInfo(true)}
+              >
+                ?
+              </button>
+            </div>
+            <div className="water-option">
+              <input
+                type="radio"
+                id="no-thanks"
+                name="water"
+                value="no-thanks"
+                checked={waterOption === 'no-thanks'}
+                onChange={(e) => handleWaterOptionSelect(e.target.value)}
+                disabled={isSubscriptionApplied}
+              />
+              <label htmlFor="no-thanks">No Thanks</label>
+            </div>
           </div>
-          <div className="water-option">
-            <input
-              type="radio"
-              id="no-thanks"
-              name="water"
-              value="no-thanks"
-              checked={waterOption === 'no-thanks'}
-              onChange={(e) => setWaterOption(e.target.value)}
-              disabled={isSubscriptionApplied}
-            />
-            <label htmlFor="no-thanks">No Thanks</label>
+        )}
+
+        {isHomeService && showWaterTermsInfo && (
+          <div className="modal-overlay water-terms-overlay sunrise-overlay" onClick={() => setShowWaterTermsInfo(false)}>
+            <div className="water-terms-modal water-terms-confirm-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Terms & Conditions</h3>
+              <p>{waterTermsText}</p>
+              <button className="close-modal-btn" onClick={() => setShowWaterTermsInfo(false)}>Close</button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {isHomeService && showDefaultPrefillPrompt && (
+          <div className="modal-overlay default-prefill-overlay" onClick={() => !applyingDefaultPrefill && setShowDefaultPrefillPrompt(false)}>
+            <div className="default-prefill-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Use saved details?</h3>
+              <p>Your profile has default car and address settings. Do you want to use them for this booking?</p>
+              <div className="default-prefill-actions">
+                <button
+                  type="button"
+                  className="default-prefill-no-btn"
+                  onClick={() => setShowDefaultPrefillPrompt(false)}
+                  disabled={applyingDefaultPrefill}
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  className="default-prefill-yes-btn"
+                  onClick={applyDefaultAddressAndCarNumber}
+                  disabled={applyingDefaultPrefill}
+                >
+                  {applyingDefaultPrefill ? 'Applying...' : 'Yes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isHomeService && showWaterTermsConfirm && (
+          <div className="modal-overlay water-terms-overlay sunrise-overlay" onClick={handleCancelWaterTerms}>
+            <div className="water-terms-modal water-terms-confirm-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Accept Terms & Conditions</h3>
+              <p>{waterTermsText}</p>
+              <label className="terms-checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={waterTermsChecked}
+                  onChange={(e) => setWaterTermsChecked(e.target.checked)}
+                />
+                <span>I agree to the above terms.</span>
+              </label>
+              <div className="terms-modal-actions">
+                <button type="button" className="terms-cancel-btn" onClick={handleCancelWaterTerms}>Cancel</button>
+                <button type="button" className="terms-accept-btn" onClick={handleAcceptWaterTerms} disabled={!waterTermsChecked}>Accept</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {isSubscriptionFlow && (
           <p className="benefits-note">
@@ -794,8 +1259,8 @@ const Booking = () => {
         <div className="booking-summary-row">
           <div className="price-display">
             <span className="price-label">Price:</span>
-            <span className="price-value">
-              {(rateLoading || subscriptionValidationLoading) ? 'Loading...' : formatRate(finalPrice, rate.currency)}
+            <span className={`price-value ${isPriceHint ? 'hint' : ''}`}>
+              {getPriceDisplayValue()}
             </span>
           </div>
 
@@ -832,15 +1297,37 @@ const Booking = () => {
             setVehicleNumberError('Please select a time slot');
             return;
           }
+          if (!selectedVehicle) {
+            setVehicleNumberError('Please choose your vehicle type');
+            return;
+          }
+          if (!washType) {
+            setVehicleNumberError('Please select a wash type');
+            return;
+          }
           if (!vehicleNumber.trim()) {
             setVehicleNumberError('Vehicle number is required');
             return;
           }          if (vehicleNumber.trim().length < 7) {
             setVehicleNumberError('Vehicle number must be at least 7 characters');
             return;
-          }          navigate('/review', {
+          }          // Save form state so it can be restored when returning from /review
+          sessionStorage.setItem('bookingFormState', JSON.stringify({
+            selectedVehicle,
+            washType,
+            searchAddress,
+            selectedCentre,
+            centreName,
+            selectedDate: selectedDate ? selectedDate.toISOString() : null,
+            selectedTimeSlot,
+            vehicleNumber,
+            waterOption
+          }));
+          navigate('/review', {
             state: {
               centreName,
+              serviceCentreId: selectedCentreId,
+              serviceType: resolvedServiceType,
               address: searchAddress,
               washType,
               selectedDate,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { readActiveMembershipCache, writeActiveMembershipCache } from '../utils/bookingsCache';
+import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import '../styles/MembershipDetail.css';
 
 const MembershipDetail = () => {
@@ -17,18 +18,14 @@ const MembershipDetail = () => {
 
   const fetchMembershipDetails = async () => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getValidatedAuthToken();
       if (!authToken) {
         navigate('/login');
         return;
       }
-      const headers = {
+      const headers = withAuthHeader({
         'Accept': 'application/json'
-      };
-      
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const cachedMembership = readActiveMembershipCache();
       let activeMembership = cachedMembership;
@@ -341,7 +338,7 @@ const MembershipDetail = () => {
       <div className="membership-actions">
         <button 
           className="book-now-btn" 
-          onClick={() => navigate('/services')}
+          onClick={() => navigate('/')}
         >
           Book Now
         </button>

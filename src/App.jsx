@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './pages/Login';
 import Home from './pages/Home';
-import Services from './pages/Services';
 import SelectCenter from './pages/SelectCenter';
 import Booking from './pages/Booking';
 import Review from './pages/Review';
@@ -21,6 +20,17 @@ import MySubscriptions from './pages/MySubscriptions';
 import AboutUs from './pages/AboutUs';
 import RefundPolicy from './pages/RefundPolicy';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import PaymentMethods from './pages/PaymentMethods';
+import { hasValidAuthSession } from './utils/auth';
+
+function ProtectedRoute({ children }) {
+  const location = useLocation();
+  if (!hasValidAuthSession()) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return children;
+}
 
 function App() {
   return (
@@ -29,23 +39,23 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Home />} />
-          <Route path="/services" element={<Services />} />
           <Route path="/select-center" element={<SelectCenter />} />
           <Route path="/booking" element={<Booking />} />
           <Route path="/review" element={<Review />} />
           <Route path="/orders" element={<Orders />} />
-          <Route path="/order-detail/:id" element={<OrderDetail />} />
+          <Route path="/order-detail/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
           <Route path="/terms" element={<TermsConditions />} />
-          <Route path="/membership-plans" element={<MembershipPlans />} />
-          <Route path="/membership-detail" element={<MembershipDetail />} />
+          <Route path="/membership-plans" element={<ProtectedRoute><MembershipPlans /></ProtectedRoute>} />
+          <Route path="/membership-detail" element={<ProtectedRoute><MembershipDetail /></ProtectedRoute>} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/referral-details" element={<ReferralDetails />} />
-          <Route path="/rewards-calculation" element={<RewardsCalculation />} />
+          <Route path="/referral-details" element={<ProtectedRoute><ReferralDetails /></ProtectedRoute>} />
+          <Route path="/rewards-calculation" element={<ProtectedRoute><RewardsCalculation /></ProtectedRoute>} />
           <Route path="/offers" element={<Offers />} />
           <Route path="/offer-detail" element={<OfferDetail />} />
-          <Route path="/chatbot" element={<Chatbot />} />
+          <Route path="/chatbot" element={<ProtectedRoute><Chatbot /></ProtectedRoute>} />
           <Route path="/my-subscriptions" element={<MySubscriptions />} />
-          <Route path="/memberships/deal-price-bookings" element={<MySubscriptions />} />
+          <Route path="/memberships/deal-price-bookings" element={<ProtectedRoute><MySubscriptions /></ProtectedRoute>} />
+          <Route path="/paymentmethods" element={<ProtectedRoute><PaymentMethods /></ProtectedRoute>} />
           <Route path="/aspcare/About us" element={<AboutUs />} />
           <Route path="/aspcare/refundpolicy" element={<RefundPolicy />} />
           <Route path="/aspcare/privacypolicy" element={<PrivacyPolicy />} />

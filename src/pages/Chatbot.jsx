@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { withAuthHeader } from '../utils/auth';
 import '../styles/Chatbot.css';
 
 const Chatbot = () => {
@@ -15,10 +16,48 @@ const Chatbot = () => {
   const [selectedCarType, setSelectedCarType] = useState('');
   const [selectedWashType, setSelectedWashType] = useState('');
   const [selectedRate, setSelectedRate] = useState(null);
+  const [selectedArea, setSelectedArea] = useState('');
+  const [selectedAddress, setSelectedAddress] = useState('');
+  const [areaSearchTerm, setAreaSearchTerm] = useState('');
+  const [bookingFlowStep, setBookingFlowStep] = useState('service');
   const [ratesInfo, setRatesInfo] = useState(null);
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
+  const [homeServiceAreas, setHomeServiceAreas] = useState([]);
+  const [carTypeOptions, setCarTypeOptions] = useState([]);
+  const [washTypeOptions, setWashTypeOptions] = useState([]);
+
+  useEffect(() => {
+    const fetchAreas = async () => {
+      try {
+        const res = await fetch('/centres/areas');
+        if (!res.ok) return;
+        const data = await res.json();
+        setHomeServiceAreas([...data, 'Other']);
+      } catch { /* keep empty */ }
+    };
+    const fetchVehicleTypes = async () => {
+      try {
+        const res = await fetch('/rates/vehicle-types');
+        if (!res.ok) return;
+        const data = await res.json();
+        setCarTypeOptions(data.map((v) => v.charAt(0) + v.slice(1).toLowerCase()));
+      } catch { /* keep empty */ }
+    };
+    const fetchWashTypes = async () => {
+      try {
+        const res = await fetch('/rates/wash-levels');
+        if (!res.ok) return;
+        const data = await res.json();
+        setWashTypeOptions(data.map((w) => w.charAt(0) + w.slice(1).toLowerCase()));
+      } catch { /* keep empty */ }
+    };
+    fetchAreas();
+    fetchVehicleTypes();
+    fetchWashTypes();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,6 +81,10 @@ const Chatbot = () => {
   const handleBotSelect = (bot) => {
     setSelectedBot(bot);
     setMessages([]);
+    setBookingFlowStep('service');
+    setSelectedArea('');
+    setSelectedAddress('');
+    setAreaSearchTerm('');
     
     if (bot === 'faq') {
       setMessages([
@@ -75,6 +118,35 @@ const Chatbot = () => {
     const messageText = text || input;
     if (!messageText.trim()) return;
 
+    if (selectedBot === 'booking' && bookingFlowStep === 'address') {
+      const enteredAddress = messageText.trim();
+      if (!enteredAddress) return;
+
+      setSelectedAddress(enteredAddress);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { type: 'user', text: enteredAddress },
+      ]);
+      setInput('');
+
+      setTimeout(() => {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            type: 'bot',
+            text: `Thanks! Address saved for ${selectedArea}. Now select your preferred date for Home Service:`,
+          },
+          {
+            type: 'calendar',
+            dates: getNextSevenDays(),
+          },
+        ]);
+      }, 300);
+
+      setBookingFlowStep('date');
+      return;
+    }
+
     setMessages([...messages, { type: 'user', text: messageText }]);
     setInput('');
 
@@ -104,6 +176,24 @@ const Chatbot = () => {
         const serviceTypes = ['Home Service', 'Self Drive', 'ASP Care', 'Teflon Coating'];
         if (serviceTypes.includes(messageText)) {
           setSelectedService(messageText);
+
+          if (messageText === 'Home Service') {
+            setBookingFlowStep('area');
+            setMessages((prevMessages) => [
+              ...prevMessages,
+              {
+                type: 'bot',
+                text: 'Please select your area for Home Service:',
+              },
+              {
+                type: 'area-dropdown',
+                options: homeServiceAreas,
+              },
+            ]);
+            return;
+          }
+
+          setBookingFlowStep('date');
           setMessages((prevMessages) => [
             ...prevMessages,
             {
@@ -134,6 +224,51 @@ const Chatbot = () => {
   };
 
   const handleOptionClick = (option) => {
+    if (selectedBot === 'booking' && option === 'Proceed to Payment') {
+      if (!selectedRate) return;
+
+      const fallbackAddress = selectedService === 'Home Service'
+        ? [selectedArea, selectedAddress].filter(Boolean).join(', ')
+        : selectedService;
+
+      navigate('/review', {
+        state: {
+          centreName: selectedService === 'Home Service' ? 'Home' : selectedService,
+          serviceType: getServiceTypeForApi(selectedService),
+          address: fallbackAddress,
+          washType: selectedRate?.washType || selectedWashType,
+          selectedDate,
+          selectedTimeSlot,
+          vehicleType: selectedRate?.carType || selectedCarType,
+          vehicleNumber: '',
+          subTotal: selectedRate?.amount ?? 0,
+          currency: 'INR',
+          waterOption: selectedWaterOption === 'with-water' ? 'give-water' : 'no-thanks',
+        },
+      });
+      return;
+    }
+
+    if (selectedBot === 'booking' && option === 'Change Selection') {
+      setSelectedCarType('');
+      setSelectedWashType('');
+      setSelectedRate(null);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { type: 'user', text: option },
+        {
+          type: 'bot',
+          text: 'No problem. Please select car type and wash type again.',
+        },
+        {
+          type: 'rollers',
+          carTypes: carTypeOptions.length > 0 ? carTypeOptions : ['Hatchback', 'Sedan', 'SUV', 'MPV', 'Pickup', 'Bike'],
+          washTypes: washTypeOptions.length > 0 ? washTypeOptions : ['Foam', 'Basic', 'Premium']
+        },
+      ]);
+      return;
+    }
+
     // Check if this is a time slot selection (selectedDate is set but selectedTimeSlot is not)
     if (selectedDate && !selectedTimeSlot && availabilitySlots.includes(option)) {
       setSelectedTimeSlot(option);
@@ -164,6 +299,29 @@ const Chatbot = () => {
     } else {
       handleSendMessage(option);
     }
+  };
+
+  const handleAreaSelect = (area) => {
+    if (!area || !area.trim()) return;
+
+    setSelectedArea(area);
+    setAreaSearchTerm(area);
+    setBookingFlowStep('address');
+
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { type: 'user', text: area },
+    ]);
+
+    setTimeout(() => {
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          type: 'bot',
+          text: `Enter your complete address in ${area}:`,
+        },
+      ]);
+    }, 300);
   };
 
   const getNextSevenDays = () => {
@@ -223,13 +381,9 @@ const Chatbot = () => {
       const serviceType = getServiceTypeForApi(serviceName);
       const url = `/bookings/availability?date=${date}&serviceType=${serviceType}`;
       
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch(url, {
         method: 'GET',
@@ -266,13 +420,9 @@ const Chatbot = () => {
       const washTypeApi = getWashTypeForApi(washType);
       const url = `/rates?vehicleType=${vehicleTypeApi}&washLevel=${washTypeApi}`;
 
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch(url, {
         method: 'GET',
@@ -322,6 +472,7 @@ const Chatbot = () => {
   const handleDateSelect = (date) => {
     const formattedDate = formatDate(date);
     setSelectedDate(formattedDate);
+    setBookingFlowStep('timeslot');
     
     // Add user message
     const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
@@ -361,6 +512,10 @@ const Chatbot = () => {
     setSelectedCarType('');
     setSelectedWashType('');
     setSelectedRate(null);
+    setSelectedArea('');
+    setSelectedAddress('');
+    setAreaSearchTerm('');
+    setBookingFlowStep('service');
     setRatesInfo(null);
   };
 
@@ -375,6 +530,7 @@ const Chatbot = () => {
     ]);
 
     setTimeout(() => {
+      setBookingFlowStep('rates');
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -383,8 +539,8 @@ const Chatbot = () => {
         },
         {
           type: 'rollers',
-          carTypes: ['Hatchback', 'Sedan', 'SUV', 'MPV', 'Pickup', 'Bike'],
-          washTypes: ['Foam', 'Basic', 'Premium']
+          carTypes: carTypeOptions.length > 0 ? carTypeOptions : ['Hatchback', 'Sedan', 'SUV', 'MPV', 'Pickup', 'Bike'],
+          washTypes: washTypeOptions.length > 0 ? washTypeOptions : ['Foam', 'Basic', 'Premium']
         },
       ]);
     }, 400);
@@ -439,6 +595,10 @@ const Chatbot = () => {
           date: selectedDate,
           time: selectedTimeSlot,
           waterOption: getWaterOptionLabel(selectedWaterOption),
+          area: selectedService === 'Home Service' ? selectedArea : '',
+          address: selectedService === 'Home Service'
+            ? [selectedArea, selectedAddress].filter(Boolean).join(', ')
+            : selectedService,
           carType: option?.carType || selectedCarType,
           washType: option?.washType || selectedWashType,
           baseRate: baseRate,
@@ -551,6 +711,34 @@ const Chatbot = () => {
                       ))}
                     </div>
                   </div>
+                ) : msg.type === 'area-dropdown' ? (
+                  <div key={idx} className="message bot-message options-message">
+                    <div className="rollers-group">
+                      <div className="roller">
+                        <label className="roller-label">Area</label>
+                        <input
+                          type="text"
+                          value={areaSearchTerm}
+                          onChange={(e) => setAreaSearchTerm(e.target.value)}
+                          placeholder="Search area"
+                          className="roller-select"
+                          style={{ marginBottom: '8px' }}
+                        />
+                        <select
+                          value={selectedArea}
+                          onChange={(e) => handleAreaSelect(e.target.value)}
+                          className="roller-select"
+                        >
+                          <option value="">Select area</option>
+                          {msg.options
+                            .filter((area) => area.toLowerCase().includes(areaSearchTerm.trim().toLowerCase()))
+                            .map((area) => (
+                            <option key={area} value={area}>{area}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
                 ) : msg.type === 'calendar' ? (
                   <div key={idx} className="message bot-message calendar-message">
                     <div className="calendar-grid">
@@ -650,6 +838,8 @@ const Chatbot = () => {
                     <div className="review-card">
                       <div className="review-title">Booking Review</div>
                       <div className="review-row"><span>Service</span><span>{msg.details.service}</span></div>
+                      {msg.details.area && <div className="review-row"><span>Area</span><span>{msg.details.area}</span></div>}
+                      <div className="review-row"><span>Address</span><span>{msg.details.address}</span></div>
                       <div className="review-row"><span>Date</span><span>{msg.details.date}</span></div>
                       <div className="review-row"><span>Time</span><span>{msg.details.time}</span></div>
                       <div className="review-row"><span>Water Option</span><span>{msg.details.waterOption}</span></div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import '../styles/RewardsCalculation.css';
 
 const RewardsCalculation = () => {
@@ -49,19 +50,16 @@ const RewardsCalculation = () => {
 
   const fetchOrders = async () => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getValidatedAuthToken();
       if (!authToken) {
         setLoading(false);
         return;
       }
       
-      const headers = {
+      const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch('/bookings/me', {
         method: 'GET',
@@ -237,7 +235,7 @@ const RewardsCalculation = () => {
           <p>Your drops will appear here once you complete a wash</p>
           <button 
             className="book-now-btn"
-            onClick={() => navigate('/services')}
+            onClick={() => navigate('/')}
           >
             Book a Wash
           </button>

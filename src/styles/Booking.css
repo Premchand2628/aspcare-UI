@@ -10,15 +10,44 @@
   z-index: 100;
 }
 
+.booking-header .back-btn-absolute {
+  position: static;
+  flex-shrink: 0;
+}
+
+.booking-home-banner {
+  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  border-radius: 12px;
+  padding: 8px 12px;
+  flex: 1;
+}
+
+.booking-home-banner p {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+}
+
+.booking-home-banner p + p {
+  margin-top: 4px;
+}
+
+.booking-home-banner strong {
+  color: #ffffff;
+  font-weight: 800;
+}
+
 .header-address-search {
   flex: 1;
   background-color: white;
-  padding: 12px 15px;
-  border-radius: 25px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  padding: 5px 8px;
+  border-radius: 16px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.10);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   position: relative;
 }
 
@@ -26,7 +55,7 @@
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 13px;
+  font-size: 10px;
   color: #333;
   outline: none;
   font-weight: 500;
@@ -35,6 +64,11 @@
 .header-address-input::placeholder {
   color: #999;
   font-weight: 400;
+}
+
+.header-address-input[readonly] {
+  cursor: default;
+  color: #2f2f2f;
 }
 
 /* Header Suggestions Dropdown */
@@ -141,20 +175,57 @@
 
 .booking-centre {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
   color: white;
   font-size: 14px;
   margin-bottom: 12px;
   font-weight: 600;
 }
 
+.centre-header-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .centre-icon {
   font-size: 16px;
+  flex-shrink: 0;
 }
 
 .centre-name {
   text-transform: capitalize;
+  flex-shrink: 0;
+}
+
+.centre-address {
+  font-weight: 400;
+  font-size: 12px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.centre-address-input {
+  font-weight: 400;
+  font-size: 7px;
+  color: white;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+  outline: none;
+  padding: 4px 2px;
+  width: 100%;
+  font-family: inherit;
+  line-height: 1.3;
+  resize: none;
+}
+
+.centre-address-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .booking-schedule,
@@ -171,35 +242,73 @@
   margin-bottom: 0;
 }
 
-.wash-dropdown {
-  background-color: white;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  color: #333;
-  padding: 5px 10px;
-  border-radius: 5px;
-  font-size: 13px;
-  cursor: pointer;
+.subscription-lock-note {
+  font-size: 12px;
   font-weight: 600;
+  color: #5E4DB2;
+  margin: -4px 0 10px;
 }
 
-.wash-dropdown option {
-  background-color: white;
+.subscription-lock-note-on-card {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.wash-btn-group {
+  display: flex;
+  gap: 6px;
+}
+.wash-btn {
+  background: transparent;
+  border: 1.5px solid #ccc;
   color: #333;
-  padding: 8px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.wash-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.wash-btn-selected {
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+  color: #fff;
+}
+
+.booking-wash-type-standalone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #333;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.booking-wash-type-standalone .wash-label-text {
+  font-weight: 600;
+  color: #555;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .points-badge {
   position: absolute;
-  top: 15px;
-  right: 15px;
+  bottom: 10px;
+  right: 12px;
   background-color: #FFD700;
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 18px;
   color: #333;
   cursor: pointer;
   transition: transform 0.2s;
@@ -380,48 +489,104 @@
 }
 
 /* Vehicle Selection */
+.vehicle-selection {
+  border: 1.5px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
 .vehicle-selection h3 {
-  font-size: 16px;
-  margin-bottom: 15px;
-  color: #333;
+  font-size: 11px;
+  margin-bottom: 10px;
+  color: #555;
+  font-weight: 600;
 }
 
 .vehicle-types {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
   margin-bottom: 20px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+  gap: 10px;
+}
+
+.vehicle-train-window {
+  width: 100%;
+  overflow: hidden;
+}
+
+.vehicle-train-touch-area {
+  width: 100%;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.vehicle-train-touch-area:active {
+  cursor: grabbing;
+}
+
+.vehicle-train-track {
+  display: flex;
+  width: 100%;
+  transition: transform 0.35s ease;
+}
+
+.vehicle-train-page {
+  flex: 0 0 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .vehicle-type-card {
-  background-color: #FFF9E6;
-  border: 2px solid transparent;
-  border-radius: 15px;
-  padding: 8px;
+  background-color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 8px 4px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
-  flex: 0 0 clamp(90px, 20%, 140px);
-  scroll-snap-align: start;
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .vehicle-type-card:nth-child(2) {
-  background-color: #FFE5E5;
-  border-color: #FF6B6B;
+  /* no card border */
 }
 
 .vehicle-type-card:nth-child(3) {
-  background-color: #E6F7FF;
+  /* no card border */
+}
+
+.vehicle-type-card:nth-child(1) .vehicle-icon {
+  border-color: #5E4DB2;
+}
+
+.vehicle-type-card:nth-child(2) .vehicle-icon {
+  border-color: #FF6B6B;
 }
 
 .vehicle-type-card.selected {
+  background-color: transparent;
+}
+
+.vehicle-type-card.selected .vehicle-icon {
+  background-color: #5E4DB2;
   border-color: #5E4DB2;
-  box-shadow: 0 4px 15px rgba(94, 77, 178, 0.3);
-  transform: scale(1.05);
+  color: #ffffff;
+}
+
+.vehicle-type-card.selected h4 {
+  color: #5E4DB2;
+  font-weight: 700;
+}
+
+.vehicle-type-card.selected p {
+  color: #5E4DB2;
 }
 
 .vehicle-type-card:hover {
@@ -430,22 +595,33 @@
 
 .check-icon {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  background-color: #FF6B6B;
-  color: white;
-  width: 25px;
-  height: 25px;
+  top: 2px;
+  right: 2px;
+  background-color: #5E4DB2;
+  color: #ffffff;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 11px;
+  z-index: 2;
 }
 
 .vehicle-icon {
-  font-size: 28px;
-  margin-bottom: 4px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2.5px solid #5E4DB2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 6px;
+  position: relative;
+  background-color: #fff;
+  transition: all 0.3s ease;
 }
 
 .vehicle-type-card h4 {
@@ -461,6 +637,28 @@
   line-height: 1.3;
 }
 
+.vehicle-train-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.vehicle-train-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #cfcfe0;
+  border: none;
+  padding: 0;
+}
+
+.vehicle-train-dot.active {
+  width: 18px;
+  border-radius: 99px;
+  background: #5E4DB2;
+}
+
 /* Water Option Section */
 .water-option-section {
   background-color: #fff;
@@ -468,32 +666,232 @@
   border-radius: 12px;
   margin-bottom: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: nowrap;
 }
 
 .water-option {
   display: flex;
   align-items: center;
-  padding: 10px 0;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.water-help-btn {
+  margin-left: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid #5E4DB2;
+  background: #f5f2ff;
+  color: #5E4DB2;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.water-help-btn:hover {
+  background: #ebe5ff;
 }
 
 .water-option input[type="radio"] {
-  width: 20px;
-  height: 20px;
-  margin-right: 12px;
-  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  flex-shrink: 0;
   accent-color: #5E4DB2;
 }
 
 .water-option label {
-  font-size: 14px;
-  color: #333;
+  font-size: 12px;
   cursor: pointer;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .water-option:first-child label {
   color: #27AE60;
   font-weight: 600;
+}
+
+.water-terms-modal {
+  background-color: white;
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  max-width: 260px;
+  width: 80%;
+  height: fit-content;
+  min-height: unset;
+  max-height: none;
+  overflow: visible;
+  margin: 0;
+  display: block;
+  flex: 0 0 auto;
+}
+
+.water-terms-overlay {
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.sunrise-overlay {
+  display: flex;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  padding: 0 10px;
+}
+
+.water-terms-confirm-modal {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 16px;
+  padding: 16px;
+  margin: 0 0 calc(90px + env(safe-area-inset-bottom));
+  animation: sunriseIn 280ms ease-out;
+}
+
+@keyframes sunriseIn {
+  from {
+    transform: translateY(110%);
+    opacity: 0.45;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.water-terms-modal h3 {
+  font-size: 17px;
+  color: #1f3c67;
+  margin-bottom: 10px;
+}
+
+.water-terms-modal p {
+  font-size: 13px;
+  color: #3a3a3a;
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+
+.terms-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #2f2f2f;
+}
+
+.terms-checkbox-row input {
+  margin-top: 2px;
+  accent-color: #5E4DB2;
+}
+
+.terms-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.terms-cancel-btn,
+.terms-accept-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.terms-cancel-btn {
+  background: #f1f1f1;
+  color: #333;
+}
+
+.terms-accept-btn {
+  background: #5E4DB2;
+  color: #fff;
+}
+
+.terms-accept-btn:disabled {
+  background: #c8c4e6;
+  cursor: not-allowed;
+}
+
+.modal-overlay.default-prefill-overlay {
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay .default-prefill-modal {
+  background: #fff;
+  border-radius: 14px;
+  width: min(280px, calc(100vw - 44px));
+  max-width: 280px;
+  padding: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  display: block;
+}
+
+.modal-overlay.default-prefill-overlay .default-prefill-modal {
+  align-self: center;
+}
+
+.default-prefill-modal h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #1f3c67;
+}
+
+.default-prefill-modal p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #3a3a3a;
+}
+
+.default-prefill-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.default-prefill-no-btn,
+.default-prefill-yes-btn {
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.default-prefill-no-btn {
+  background: #f1f1f1;
+  color: #333;
+}
+
+.default-prefill-yes-btn {
+  background: #5E4DB2;
+  color: #fff;
+}
+
+.default-prefill-no-btn:disabled,
+.default-prefill-yes-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
 }
 
 /* Summary Row - Price and Vehicle Input Side by Side */
@@ -528,6 +926,13 @@
   font-size: 24px;
   color: #5E4DB2;
   font-weight: 700;
+}
+
+.price-value.hint {
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+  font-weight: 500;
 }
 
 /* Input Section */
@@ -640,6 +1045,10 @@
     font-size: 18px;
   }
 
+  .price-value.hint {
+    font-size: 10px;
+  }
+
   .vehicle-input-section {
     border-radius: 10px;
     overflow: hidden;
@@ -650,22 +1059,25 @@
     font-size: 12px;
     border-radius: 10px;
   }
-    font-size: 13px;
-  }
 
   .vehicle-types {
-    scroll-snap-type: x proximity;
     gap: 8px;
   }
 
   .vehicle-type-card {
-    flex-basis: 50%;
-    padding: 4px;
+    min-height: 74px;
+    padding: 8px;
+  }
+
+  .vehicle-train-page {
+    gap: 8px;
   }
 
   .vehicle-icon {
-    font-size: 20px;
-    margin-bottom: 2px;
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+    margin-bottom: 4px;
   }
 
   .vehicle-type-card h4 {
@@ -683,6 +1095,15 @@
     font-size: 10px;
     top: 2px;
     right: 2px;
+  }
+
+  .vehicle-train-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .vehicle-train-dot.active {
+    width: 14px;
   }
 
   .time-slot-grid {
@@ -762,6 +1183,7 @@
 
   .water-option-section {
     padding: 12px;
+    gap: 12px;
   }
 
   .water-option-section h3 {
@@ -774,8 +1196,14 @@
   }
 
   .water-option {
-    padding: 10px;
     font-size: 12px;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+  }
+
+  .water-option label {
+    font-size: 11px;
+    white-space: nowrap;
   }
 
   .location-selection {
@@ -820,11 +1248,18 @@
   }
 
   .vehicle-type-card {
+    min-height: 90px;
     padding: 12px;
   }
 
+  .vehicle-train-page {
+    gap: 15px;
+  }
+
   .vehicle-icon {
-    font-size: 32px;
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
     margin-bottom: 8px;
   }
 

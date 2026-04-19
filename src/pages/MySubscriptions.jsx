@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { clearAuthSession, getValidatedAuthToken, withAuthHeader } from '../utils/auth';
+import { readSubscriptionsCache, writeSubscriptionsCache } from '../utils/subscriptionsCache';
 import '../styles/MySubscriptions.css';
 
 const formatCurrency = (value) => {
@@ -23,6 +25,13 @@ const formatDateTime = (value) => {
 
 const normalizeWater = (value) => (String(value || '').toUpperCase() === 'Y' ? 'Yes' : 'No');
 
+const formatDate = (value) => {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 const normalizeServiceType = (value) => {
   const normalized = String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
   if (normalized === 'SELFDRIVE') return 'SELF_DRIVE';
@@ -37,9 +46,10 @@ function MySubscriptions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedRowId, setExpandedRowId] = useState(null);
+  const [notLoggedIn, setNotLoggedIn] = useState(false);
 
   const toggleRow = (id) => {
-    setExpandedRowId(id);
+    setExpandedRowId((prev) => (prev === id ? null : id));
   };
 
   useEffect(() => {
@@ -48,28 +58,27 @@ function MySubscriptions() {
         setLoading(true);
         setError('');
 
-        const authTokenRaw = (
-          localStorage.getItem('authToken') ||
-          localStorage.getItem('token') ||
-          localStorage.getItem('jwt') ||
-          ''
-        ).trim();
-
-        const isLikelyJwt = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(authTokenRaw);
-        const authToken = isLikelyJwt ? authTokenRaw : '';
-
-        if (authToken) {
-          localStorage.setItem('authToken', authToken);
-        } else {
-          localStorage.removeItem('authToken');
+        const authToken = getValidatedAuthToken();
+        if (!authToken) {
+          setNotLoggedIn(true);
+          return;
         }
 
-        const headers = {
-          Accept: 'application/json'
-        };
+        const userPhone = localStorage.getItem('userPhone');
+        if (!userPhone || userPhone === 'null' || userPhone.trim() === '') {
+          setItems([]);
+          return;
+        }
 
-        if (authToken) {
-          headers.Authorization = `Bearer ${authToken}`;
+        const headers = withAuthHeader({
+          Accept: 'application/json'
+        });
+
+        const cached = readSubscriptionsCache();
+        if (cached) {
+          setItems(cached);
+          setLoading(false);
+          return;
         }
 
         const response = await fetch('/memberships/deal-price-bookings/me', {
@@ -79,31 +88,13 @@ function MySubscriptions() {
 
         if (!response.ok) {
           if (response.status === 401) {
-            localStorage.removeItem('authToken');
+            clearAuthSession();
             setError('Session expired. Please login again.');
             setTimeout(() => navigate('/login'), 600);
             return;
           }
 
           if (response.status === 403) {
-            const phone = (localStorage.getItem('userPhone') || '').trim();
-            if (phone) {
-              const fallback = await fetch(`/memberships/deal-price-bookings/by-phone?phone=${encodeURIComponent(phone)}`, {
-                method: 'GET',
-                headers: {
-                  Accept: 'application/json'
-                }
-              });
-
-              if (fallback.ok) {
-                const fallbackData = await fallback.json();
-                const nextItems = Array.isArray(fallbackData) ? fallbackData : [];
-                setItems(nextItems);
-                setExpandedRowId(nextItems.length > 0 ? nextItems[0].id : null);
-                return;
-              }
-            }
-
             setError('Access denied for current session. Please login again.');
             return;
           }
@@ -114,8 +105,9 @@ function MySubscriptions() {
 
         const data = await response.json();
         const nextItems = Array.isArray(data) ? data : [];
+        writeSubscriptionsCache(nextItems);
         setItems(nextItems);
-        setExpandedRowId(nextItems.length > 0 ? nextItems[0].id : null);
+        setExpandedRowId(null);
       } catch (err) {
         console.error('MySubscriptions fetch error:', err);
         setError('Unable to load subscriptions right now.');
@@ -137,7 +129,15 @@ function MySubscriptions() {
       <div className="subscriptions-strip-line" />
 
       {loading && <p className="subscriptions-state">Loading subscriptions...</p>}
-      {!loading && error && <p className="subscriptions-error">{error}</p>}
+      {!loading && notLoggedIn && (
+        <div className="subscriptions-login-prompt">
+          <div className="subscriptions-login-icon">�</div>
+          <h2 className="subscriptions-login-title">Please login to view your subscriptions</h2>
+          <p className="subscriptions-login-desc">Sign in or sign up to view and manage your plans</p>
+          <button className="subscriptions-login-btn" onClick={() => navigate('/login', { state: { from: { pathname: '/my-subscriptions' } } })}>Login / Signup</button>
+        </div>
+      )}
+      {!loading && error && !notLoggedIn && <p className="subscriptions-error">{error}</p>}
 
       {!loading && !error && items.length === 0 && (
         <div className="subscriptions-empty">
@@ -148,9 +148,14 @@ function MySubscriptions() {
 
       {!loading && !error && items.length > 0 && (
         <div className="subscriptions-list">
+          <p className="subscriptions-tap-hint">Tap to view the details</p>
           {items.map((item) => {
             const leftWashes = Number(item.leftWashes ?? 0);
             const isBookDisabled = leftWashes <= 0;
+            const isHome = normalizeServiceType(item.serviceType) === 'HOME';
+            const needsWater = String(item.waterProvided || '').toUpperCase() === 'Y';
+            const tagline = isHome ? (needsWater ? 'Sit, Book, Relax' : 'Sit, Book & Relax') : 'Book and get it done';
+            const locationLabel = isHome ? '@Home' : '@Center';
 
             return (
             <div
@@ -159,85 +164,76 @@ function MySubscriptions() {
               onClick={() => toggleRow(item.id)}
             >
               <div className="subscription-compact-row">
-                <h3 className="subscription-title">
-                  <span className="title-car-type">{item.carType || 'N/A'}</span>
-                  <span className="title-separator"> • </span>
-                  <span className="title-service-type">{item.serviceType || 'N/A'}</span>
-                  <span className="title-separator"> • </span>
-                  <span className="title-wash-type">{item.washType || 'N/A'}</span>
-                </h3>
-                <button
-                  className="subscription-book-btn"
-                  disabled={isBookDisabled}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isBookDisabled) {
-                      return;
-                    }
-                    const normalizedServiceType = normalizeServiceType(item.serviceType);
-                    const destination = normalizedServiceType === 'HOME' ? '/booking' : '/select-center';
-                    navigate(destination, {
-                      state: {
-                        serviceType: normalizedServiceType,
-                        subscription: item,
-                        source: 'my-subscriptions'
-                      }
-                    });
-                  }}
-                >
-                  Book now
-                </button>
-              </div>
-
-              <div className="subscription-expand-row">
+                <p className="subscription-tagline">{tagline}</p>
                 <p className="subscription-left-text">
-                  <span className="left-count">{leftWashes}</span> washes left
+                  <span className="left-label">Left:</span> <span className={`left-count ${leftWashes >= 3 ? 'washes-green' : leftWashes === 2 ? 'washes-orange' : 'washes-red'}`}>{leftWashes}</span>
                 </p>
               </div>
 
+              <div className="subscription-desc-row">
+                <p className="subscription-description">
+                  Book your <strong className="highlight-car-type">{item.carType || 'N/A'}</strong> {item.washType || 'N/A'} wash <strong className="highlight-service-type">{locationLabel}</strong>
+                </p>
+                <button
+                    className="subscription-book-btn"
+                    disabled={isBookDisabled}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isBookDisabled) {
+                        return;
+                      }
+                      const normalizedServiceType = normalizeServiceType(item.serviceType);
+                      const destination = normalizedServiceType === 'HOME' ? '/booking' : '/select-center';
+                      navigate(destination, {
+                        state: {
+                          serviceType: normalizedServiceType,
+                          subscription: item,
+                          source: 'my-subscriptions'
+                        }
+                      });
+                    }}
+                  >
+                    Book
+                  </button>
+              </div>
+
+              {isHome && needsWater && (
+                <p className="subscription-water-note">Please provide water to the washer</p>
+              )}
+
               {expandedRowId === item.id && (
-                <>
-                  <div className="subscription-top-row">
-                    <span className={`status-pill ${String(item.paymentStatus || '').toUpperCase() === 'SUCCESS' ? 'success' : 'pending'}`}>
-                      {item.paymentStatus || 'N/A'}
-                    </span>
+                <div className="subscription-details-block">
+                  <div className="detail-row">
+                    <span className="detail-label">Plan code</span>
+                    <span className="detail-sep">:</span>
+                    <span className="detail-value">{item.planTypeCode || 'N/A'}</span>
                   </div>
-
-                  <p className="subscription-meta">Water Provided: {normalizeWater(item.waterProvided)}</p>
-                  <p className="subscription-meta">Plan Code: {item.planTypeCode || 'N/A'}</p>
-                  <p className="subscription-meta">Transaction: {item.transactionId || 'N/A'}</p>
-                  <p className="subscription-meta">Date: {formatDateTime(item.createdAt)}</p>
-
-                  <div className="subscription-usage">
-                    <div>
-                      <span>Total Washes</span>
-                      <strong>{Number(item.totalWashes ?? 0)}</strong>
-                    </div>
-                    <div>
-                      <span>Used</span>
-                      <strong>{Number(item.usedWashes ?? 0)}</strong>
-                    </div>
-                    <div>
-                      <span>Left</span>
-                      <strong>{leftWashes}</strong>
-                    </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Start date</span>
+                    <span className="detail-sep">:</span>
+                    <span className="detail-value">{formatDate(item.createdAt)}</span>
                   </div>
-
-                  <div className="subscription-pricing">
-                    <div>
-                      <span>Original</span>
-                      <strong>{formatCurrency(item.originalAmount)}</strong>
-                    </div>
-                    <div>
-                      <span>Payable</span>
-                      <strong>{formatCurrency(item.payableAmount)}</strong>
-                    </div>
-                    <div>
-                      <span>Discount</span>
-                      <strong>{Number(item.discountPercentApplied || 0)}%</strong>
-                    </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Exp date</span>
+                    <span className="detail-sep">:</span>
+                    <span className="detail-value">{formatDate(item.expiryDate)}</span>
                   </div>
-                </>
+                  <div className="detail-row">
+                    <span className="detail-label">Actual Amount</span>
+                    <span className="detail-sep">:</span>
+                    <span className="detail-value">{formatCurrency(item.originalAmount)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Discount</span>
+                    <span className="detail-sep">:</span>
+                    <span className="detail-value">{Number(item.discountPercentApplied || 0)}%</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Amount paid</span>
+                    <span className="detail-sep">:</span>
+                    <span className="detail-value">{formatCurrency(item.payableAmount)}</span>
+                  </div>
+                </div>
               )}
             </div>
             );
@@ -245,7 +241,7 @@ function MySubscriptions() {
         </div>
       )}
 
-      <BottomNav active="profile" />
+      <BottomNav active="membership" />
     </div>
   );
 }

@@ -2,6 +2,42 @@
   padding-top: 10px;
 }
 
+.subscriptions-login-prompt {
+  text-align: center;
+  padding: 50px 24px;
+  margin-top: 30px;
+}
+
+.subscriptions-login-icon {
+  font-size: 52px;
+  margin-bottom: 12px;
+}
+
+.subscriptions-login-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1b2142;
+  margin: 0 0 8px;
+}
+
+.subscriptions-login-desc {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 24px;
+}
+
+.subscriptions-login-btn {
+  display: inline-block;
+  padding: 12px 36px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #5e4db2, #764ba2);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .subscriptions-header {
   display: flex;
   justify-content: space-between;
@@ -87,8 +123,8 @@
   padding: 14px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   border: 2px solid transparent;
-  cursor: pointer;
   transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  cursor: pointer;
 }
 
 .subscription-card-active {
@@ -102,8 +138,99 @@
 .subscription-compact-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
+}
+
+.subscription-tagline {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.3;
+  letter-spacing: 0.3px;
+  background: linear-gradient(135deg, #4f79c9, #5E4DB2);
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+.subscription-desc-row {
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.subscription-description {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #444;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.highlight-car-type {
+  color: #2f58a9;
+  font-weight: 700;
+}
+
+.highlight-service-type {
+  color: #5E4DB2;
+  font-weight: 700;
+}
+
+.subscription-water-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #d97706;
+  background: #fef3c7;
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 5px;
+  float: right;
+}
+
+.subscriptions-tap-hint {
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+  margin: 0 0 8px;
+  font-style: italic;
+}
+
+.subscription-details-block {
+  margin-top: 12px;
+  padding: 10px 0 0;
+  border-top: 1px solid #eee;
+}
+
+.detail-row {
+  display: flex;
+  align-items: baseline;
+  padding: 4px 0;
+  font-size: 14px;
+  color: #222;
+}
+
+.detail-label {
+  font-weight: 700;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.detail-sep {
+  margin: 0 8px;
+  color: #888;
+}
+
+.detail-value {
+  font-weight: 500;
+  color: #444;
 }
 
 .subscription-title {
@@ -130,20 +257,30 @@
 }
 
 .subscription-book-btn {
-  background: #4f79c9;
+  background: linear-gradient(135deg, #5e6fd6 0%, #4f79c9 40%, #6a8fe0 100%);
   color: #fff;
-  border: 1px solid #2e5eaf;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 14px;
-  font-weight: 600;
+  border: none;
+  border-radius: 20px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(79, 121, 201, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.subscription-book-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 1px 4px rgba(79, 121, 201, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
 .subscription-book-btn:disabled {
-  background: #b8beca;
-  border-color: #aab2bf;
+  background: linear-gradient(135deg, #b8beca, #a0a8b5);
+  box-shadow: none;
   color: #eef1f5;
   cursor: not-allowed;
 }
@@ -151,22 +288,36 @@
 .subscription-expand-row {
   margin-top: 10px;
   display: flex;
-  justify-content: flex-start;
+  justify-content: flex-end;
   align-items: center;
 }
 
 .subscription-left-text {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
   font-weight: 600;
   color: #111;
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+  gap: 3px;
+}
+
+.left-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
 }
 
 .left-count {
   font-size: 22px;
   font-weight: 700;
 }
+
+.left-count.washes-green { color: #1a8a3f; }
+.left-count.washes-orange { color: #d97706; }
+.left-count.washes-red { color: #dc2626; }
 
 .subscription-top-row {
   display: flex;
@@ -207,23 +358,20 @@
   font-size: 13px;
 }
 
-@media (max-width: 420px) {
-  .subscription-left-text {
-    font-size: 16px;
-  }
-
-  .left-count {
-    font-size: 20px;
-  }
-
-  .subscription-title {
-    font-size: 16px;
-  }
-
-  .subscription-book-btn {
-    padding: 8px 10px;
-    font-size: 13px;
-  }
+@media (max-width: 480px) {
+  .subscriptions-header { padding: 12px 10px; border-radius: 12px; }
+  .subscriptions-header h1 { font-size: 18px; }
+  .subscriptions-back-btn { width: 34px; height: 34px; font-size: 20px; }
+  .subscriptions-header-spacer { width: 34px; }
+  .subscription-left-text { font-size: 16px; }
+  .left-count { font-size: 20px; }
+  .subscription-title { font-size: 16px; }
+  .subscription-book-btn { padding: 8px 10px; font-size: 13px; }
+  .subscription-card { padding: 12px; }
+  .subscriptions-empty { padding: 20px; }
+  .subscription-pricing, .subscription-usage { gap: 6px; }
+  .subscription-pricing span, .subscription-usage span { font-size: 10px; }
+  .subscription-pricing strong, .subscription-usage strong { font-size: 13px; }
 }
 
 .subscription-pricing {
@@ -268,4 +416,24 @@
   font-size: 14px;
   color: #222;
   margin-top: 3px;
+}
+
+@media (min-width: 768px) {
+  .subscriptions-header { padding: 20px 18px; border-radius: 20px; }
+  .subscriptions-header h1 { font-size: 24px; }
+  .subscriptions-back-btn { width: 42px; height: 42px; font-size: 24px; }
+  .subscriptions-header-spacer { width: 42px; }
+  .subscriptions-list { gap: 16px; }
+  .subscription-card { padding: 18px; border-radius: 16px; }
+  .subscription-title { font-size: 20px; }
+  .subscription-book-btn { padding: 10px 18px; font-size: 15px; }
+  .subscription-left-text { font-size: 20px; }
+  .left-count { font-size: 26px; }
+  .subscriptions-empty { padding: 32px; }
+  .subscriptions-empty button { padding: 12px 20px; font-size: 15px; }
+  .subscription-pricing, .subscription-usage { gap: 12px; }
+  .subscription-pricing span, .subscription-usage span { font-size: 12px; }
+  .subscription-pricing strong, .subscription-usage strong { font-size: 16px; }
+  .subscription-meta { font-size: 14px; }
+  .status-pill { font-size: 12px; padding: 5px 10px; }
 }

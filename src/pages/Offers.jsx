@@ -1,12 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import PaymentMethodModal from '../components/PaymentMethodModal';
+import { getStoredPhone, toApiServiceType, toApiWaterProvidedFlag, toUiServiceType } from '../utils/apiMappers';
+import { clearAuthSession, getValidatedAuthToken, withAuthHeader } from '../utils/auth';
+import { readDealPricesCache, writeDealPricesCache } from '../utils/dealPricesCache';
+import { clearSubscriptionsCache } from '../utils/subscriptionsCache';
 import '../styles/Offers.css';
 
 const Offers = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const preselectedCarType = location.state?.preselectedCarType;
   const [offers, setOffers] = useState([]);
-  const [selectedCarType, setSelectedCarType] = useState(null);
+  const [selectedCarType, setSelectedCarType] = useState(() => {
+    if (!preselectedCarType) return null;
+    const v = String(preselectedCarType).trim().toLowerCase();
+    if (v === 'hatchback') return 'Hatchback';
+    if (v === 'sedan') return 'Sedan';
+    if (v === 'suv') return 'SUV';
+    if (v === 'mpv' || v === 'muv') return 'MPV';
+    if (v === 'pickup' || v === 'pick up') return 'Pickup';
+    return preselectedCarType;
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedDealForPay, setSelectedDealForPay] = useState(null);
@@ -14,6 +30,23 @@ const Offers = () => {
   const [waterConsentChecked, setWaterConsentChecked] = useState(false);
   const [priceSort, setPriceSort] = useState('');
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [selectedDealId, setSelectedDealId] = useState(null);
+  const [dealTermsAccepted, setDealTermsAccepted] = useState(false);
+
+  // Phone linking modal state (for OAuth users without phone)
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [phoneStep, setPhoneStep] = useState('enter'); // 'enter' | 'confirm' | 'otp' | 'done'
+  const [phoneIsNew, setPhoneIsNew] = useState(false);
+  const [phoneExistingEmail, setPhoneExistingEmail] = useState('');
+  const [otpInput, setOtpInput] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [phoneBusy, setPhoneBusy] = useState(false);
+  const [pendingDeal, setPendingDeal] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentDeal, setPaymentDeal] = useState(null);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   const CAR_TYPES = ['Hatchback', 'Sedan', 'SUV', 'MPV', 'Pickup'];
 
@@ -30,9 +63,7 @@ const Offers = () => {
   };
 
   const normalizeServiceType = (value) => {
-    const v = normalize(value).replace('_', ' ');
-    if (v === 'self drive') return 'Self Drive';
-    return 'Home';
+    return toUiServiceType(value);
   };
 
   const normalizeWashType = (value) => {
@@ -54,25 +85,32 @@ const Offers = () => {
     fetchDeals();
   }, []);
 
+  useEffect(() => {
+    setDealTermsAccepted(false);
+  }, [selectedDealId, selectedCarType]);
+
   const fetchDeals = async () => {
     try {
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      };
-      
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
+      const cachedDeals = readDealPricesCache();
+      let data = Array.isArray(cachedDeals) ? cachedDeals : null;
+
+      if (!data) {
+        const response = await fetch('/deal-prices', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (!response.ok) {
+          setError('Failed to fetch deals');
+          setOffers([]);
+          return;
+        }
+
+        data = await response.json();
+        writeDealPricesCache(Array.isArray(data) ? data : []);
       }
 
-      const response = await fetch('/api/deal-prices', {
-        method: 'GET',
-        headers: headers
-      });
-
-      if (response.ok) {
-        const data = await response.json();
+      if (Array.isArray(data)) {
         const transformedOffers = data.map((deal) => ({
           id: deal.id,
           serviceType: normalizeServiceType(deal.dealServiceType),
@@ -158,6 +196,14 @@ const Offers = () => {
 
   const formatMoney = (value) => Number(value || 0).toFixed(2);
 
+  const getDealImageByCarType = (carType) => {
+    const normalized = normalizeCarType(carType);
+    if (normalized === 'Hatchback' || normalized === 'Sedan') return '/images/hatchback.png';
+    if (normalized === 'SUV' || normalized === 'MPV') return '/images/suv.png';
+    if (normalized === 'Pickup') return '/images/pickup.png';
+    return '/images/hatchback.png';
+  };
+
   const rawDeals = offers
     .filter((deal) => normalizeCarType(deal.carType) === selectedCarType)
     .sort((a, b) => {
@@ -210,48 +256,31 @@ const Offers = () => {
     });
   })();
 
-  const getStoredPhone = () => {
-    const possibleKeys = ['phone', 'userPhone', 'mobileNumber', 'mobile', 'contact'];
-    for (const key of possibleKeys) {
-      const value = localStorage.getItem(key);
-      if (value && value.trim()) {
-        return value.trim();
-      }
-    }
-    return null;
-  };
+  const dealsToDisplay = selectedDealId
+    ? sortedDetailedDeals.filter((deal) => deal.id === selectedDealId)
+    : sortedDetailedDeals;
+
+  const selectedDeal = selectedDealId
+    ? sortedDetailedDeals.find((deal) => deal.id === selectedDealId)
+    : null;
 
   const saveDealBooking = async (deal) => {
-    const authTokenRaw = (
-      localStorage.getItem('authToken') ||
-      localStorage.getItem('token') ||
-      localStorage.getItem('jwt') ||
-      ''
-    ).trim();
-
-    const isLikelyJwt = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(authTokenRaw);
-    const authToken = isLikelyJwt ? authTokenRaw : '';
+    const authToken = getValidatedAuthToken();
 
     if (!authToken) {
-      localStorage.removeItem('authToken');
+      clearAuthSession();
       throw new Error('SESSION_EXPIRED');
     }
 
-    localStorage.setItem('authToken', authToken);
-
-    const headers = {
+    const headers = withAuthHeader({
       'Content-Type': 'application/json',
       Accept: 'application/json'
-    };
-
-    if (authToken) {
-      headers.Authorization = `Bearer ${authToken}`;
-    }
+    });
 
     const payload = {
       phone: getStoredPhone(),
       carType: selectedCarType,
-      serviceType: deal.serviceType,
+      serviceType: toApiServiceType(deal.serviceType),
       paymentStatus: 'SUCCESS',
       refundAmount: 0,
       refundStatus: 'NOT_INITIATED',
@@ -259,7 +288,7 @@ const Offers = () => {
       originalAmount: Number(formatMoney(deal.originalPrice)),
       payableAmount: Number(formatMoney(deal.discountedPrice)),
       washType: deal.washType,
-      waterProvided: deal.waterProviding,
+      waterProvided: toApiWaterProvidedFlag(deal.waterProviding),
       totalWashes: Number(deal.totalWashes || 3)
     };
 
@@ -270,7 +299,7 @@ const Offers = () => {
     });
 
     if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem('authToken');
+      clearAuthSession();
       throw new Error('SESSION_EXPIRED');
     }
 
@@ -281,12 +310,22 @@ const Offers = () => {
   };
 
   const proceedToPay = (deal) => {
+    setPaymentDeal(deal);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentMethodSelect = (method) => {
+    setShowPaymentModal(false);
+    const deal = paymentDeal;
+    setPaymentDeal(null);
     saveDealBooking(deal)
       .then(() => {
+        clearSubscriptionsCache();
         navigate('/terms', {
           state: {
             offerDeal: deal,
-            source: 'offers'
+            source: 'offers',
+            paymentMethod: method
           }
         });
       })
@@ -302,6 +341,25 @@ const Offers = () => {
   };
 
   const handlePayNow = (deal) => {
+    // Require login before payment
+    if (!getValidatedAuthToken()) {
+      setShowLoginPopup(true);
+      return;
+    }
+    // Check if user has a phone number (OAuth users may not)
+    const phone = getStoredPhone();
+    if (!phone) {
+      setPendingDeal(deal);
+      setPhoneInput('');
+      setPhoneError('');
+      setOtpInput('');
+      setOtpError('');
+      setPhoneStep('enter');
+      setPhoneIsNew(false);
+      setShowPhoneModal(true);
+      return;
+    }
+
     if (deal.waterProviding === 'Y') {
       setSelectedDealForPay(deal);
       setWaterConsentChecked(false);
@@ -309,6 +367,118 @@ const Offers = () => {
       return;
     }
     proceedToPay(deal);
+  };
+
+  // Phone modal: check if phone exists
+  const handlePhoneCheck = async () => {
+    setPhoneError('');
+    const trimmed = phoneInput.trim();
+    if (!trimmed || !/^\d{10}$/.test(trimmed)) {
+      setPhoneError('Please enter a valid 10-digit phone number');
+      return;
+    }
+    setPhoneBusy(true);
+    try {
+      const res = await fetch('/auth/check-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: trimmed })
+      });
+      const data = await res.json();
+      setPhoneIsNew(!data.exists);
+      setPhoneExistingEmail(data.email || '');
+      setPhoneStep('confirm');
+    } catch {
+      setPhoneError('Unable to verify phone. Please try again.');
+    } finally {
+      setPhoneBusy(false);
+    }
+  };
+
+  // Phone modal: send OTP
+  const handleSendOtp = async () => {
+    setOtpError('');
+    setPhoneBusy(true);
+    try {
+      const res = await fetch('/auth/send-otp-generic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber: phoneInput.trim() })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to send OTP');
+      }
+      setPhoneStep('otp');
+    } catch (err) {
+      setOtpError(err.message || 'Failed to send OTP');
+    } finally {
+      setPhoneBusy(false);
+    }
+  };
+
+  // Phone modal: verify OTP and save phone
+  const handleVerifyOtp = async () => {
+    setOtpError('');
+    const trimmedOtp = otpInput.trim();
+    if (!trimmedOtp) {
+      setOtpError('Please enter the OTP');
+      return;
+    }
+    setPhoneBusy(true);
+    try {
+      // Verify OTP
+      const verifyRes = await fetch('/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber: phoneInput.trim(), otp: trimmedOtp })
+      });
+      if (!verifyRes.ok) {
+        const data = await verifyRes.json().catch(() => ({}));
+        throw new Error(data.message || 'OTP verification failed');
+      }
+
+      // Save phone to user profile
+      const email = localStorage.getItem('userEmail');
+      const headers = withAuthHeader({
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      });
+
+      const updateRes = await fetch('/users/update-phone', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ email, phone: phoneInput.trim() })
+      });
+
+      if (!updateRes.ok) {
+        const data = await updateRes.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to save phone number');
+      }
+
+      const updateData = await updateRes.json().catch(() => null);
+      if (updateData?.token) {
+        localStorage.setItem('authToken', updateData.token);
+      }
+      localStorage.setItem('userPhone', phoneInput.trim());
+
+      // Close modal and proceed to pay
+      setShowPhoneModal(false);
+      if (pendingDeal) {
+        if (pendingDeal.waterProviding === 'Y') {
+          setSelectedDealForPay(pendingDeal);
+          setWaterConsentChecked(false);
+          setShowWaterPopup(true);
+        } else {
+          proceedToPay(pendingDeal);
+        }
+        setPendingDeal(null);
+      }
+    } catch (err) {
+      setOtpError(err.message || 'Verification failed. Please try again.');
+    } finally {
+      setPhoneBusy(false);
+    }
   };
 
   const handleProceedAfterWaterConsent = () => {
@@ -397,6 +567,7 @@ const Offers = () => {
                   setSelectedCarType(carType);
                   setPriceSort('');
                   setShowSortMenu(false);
+                  setSelectedDealId(null);
                 }}
               >
                 <div className="offer-category-cap">
@@ -418,35 +589,81 @@ const Offers = () => {
       {!loading && !error && selectedCarType && (
         <div className="deals-view">
           <div className="deals-grid">
-            {sortedDetailedDeals.map((deal, index) => (
+            {dealsToDisplay.map((deal, index) => (
               <div
                 key={deal.id}
-                className={`deal-detail-card ${!deal.available ? 'missing' : ''}`}
-                style={{ backgroundColor: palette[index % palette.length] }}
+                className={`deal-detail-card ${!deal.available ? 'missing' : ''} ${selectedDealId === deal.id ? 'selected' : ''}`}
+                onClick={() => {
+                  if (!deal.available) return;
+                  setSelectedDealId(deal.id);
+                }}
               >
-                <div className="deal-top-row">
-                  <span className="deal-service">{deal.serviceType}</span>
-                  <span className="deal-wash">{formatWashTitle(deal.washType)}</span>
+                <img className="deal-car-image" src={getDealImageByCarType(selectedCarType)} alt="" />
+                <div className="deal-card-content">
+                  <div className="deal-card-left">
+                    <h3 className="deal-card-title">
+                      {deal.totalWashes || 3} {formatWashTitle(deal.washType)} washes
+                    </h3>
+                    <p className="deal-card-subtitle">
+                      @{deal.serviceType} for {selectedCarType}
+                    </p>
+                    {deal.waterProviding === 'Y' && (
+                      <p className="deal-water-note">💧 Water to be provided by you</p>
+                    )}
+                  </div>
+                  <div className="deal-card-right">
+                    <div className="deal-discount-badge">
+                      {getDiscountPercent(deal.originalPrice, deal.discountedPrice)}% OFF
+                    </div>
+                    <div className="deal-card-pricing">
+                      <span className="deal-original-price">₹{Math.round(deal.originalPrice)}</span>
+                      <span className="deal-final-price">₹{Math.round(deal.discountedPrice)}/-</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="deal-mid-row">
-                  <p className="deal-washes">3 washes</p>
-                  <p className="deal-main-price">Rs{formatMoney(deal.originalPrice)}</p>
-                </div>
-                <p className="deal-discount">Flat {getDiscountPercent(deal.originalPrice, deal.discountedPrice)}% off</p>
-                <p className="deal-sub-price">
-                  @Rs{formatMoney(deal.discountedPrice)} <span className="deal-tax-inline">(incl. tax)</span>
-                </p>
-                <div className="deal-footer-row">
-                  <button type="button" className="deal-pay-btn" onClick={() => handlePayNow(deal)}>Pay now</button>
-                  <p className="deal-tc">T&C Apply</p>
-                </div>
+                {selectedDealId === deal.id && deal.available && (
+                  <label className="deal-terms-check">
+                    <input
+                      type="checkbox"
+                      checked={dealTermsAccepted}
+                      onChange={(e) => setDealTermsAccepted(e.target.checked)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <span>I accept all Terms and conditions</span>
+                  </label>
+                )}
               </div>
             ))}
           </div>
 
-          <button type="button" className="back-to-categories" onClick={() => setSelectedCarType(null)}>
-            ← Back to 5 boxes
-          </button>
+          {selectedDeal && selectedDeal.available && (
+            <div className="deals-action-row">
+              <button
+                type="button"
+                className="deal-pay-btn deal-pay-btn-standalone"
+                onClick={() => handlePayNow(selectedDeal)}
+                disabled={!dealTermsAccepted}
+              >
+                Pay now
+              </button>
+            </div>
+          )}
+
+          <div className="deals-action-row deals-back-row">
+            <button
+              type="button"
+              className="back-to-categories"
+              onClick={() => {
+                if (selectedDealId) {
+                  setSelectedDealId(null);
+                  return;
+                }
+                setSelectedCarType(null);
+              }}
+            >
+              ← Back
+            </button>
+          </div>
         </div>
       )}
 
@@ -482,8 +699,126 @@ const Offers = () => {
         </div>
       )}
 
+      {/* Phone Linking Modal for OAuth users */}
+      {showPhoneModal && (
+        <div className="modal-overlay" onClick={() => setShowPhoneModal(false)}>
+          <div className="phone-link-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="phone-link-close" onClick={() => setShowPhoneModal(false)}>✕</button>
+
+            {phoneStep === 'enter' && (
+              <>
+                <div className="phone-link-icon">📱</div>
+                <h3 className="phone-link-title">Link Your Phone Number</h3>
+                <p className="phone-link-desc">Enter your phone number to continue with payment</p>
+                <input
+                  type="tel"
+                  className="phone-link-input"
+                  placeholder="Enter 10-digit phone number"
+                  value={phoneInput}
+                  onChange={(e) => { setPhoneInput(e.target.value.replace(/\D/g, '')); setPhoneError(''); }}
+                  maxLength="10"
+                  disabled={phoneBusy}
+                />
+                {phoneError && <p className="phone-link-error">{phoneError}</p>}
+                <button
+                  className="phone-link-btn"
+                  onClick={handlePhoneCheck}
+                  disabled={phoneBusy || phoneInput.trim().length !== 10}
+                >
+                  {phoneBusy ? 'Checking...' : 'Continue'}
+                </button>
+              </>
+            )}
+
+            {phoneStep === 'confirm' && (
+              <>
+                <div className="phone-link-icon">{phoneIsNew ? '🎉' : '👋'}</div>
+                <h3 className="phone-link-title">
+                  {phoneIsNew ? 'New User!' : 'Welcome Back!'}
+                </h3>
+                <p className="phone-link-desc">
+                  {phoneIsNew
+                    ? 'Get a signup bonus of ₹20 off on your first booking!'
+                    : `${phoneInput} is already registered with ${phoneExistingEmail}. Do you wish to continue?`
+                  }
+                </p>
+                {otpError && <p className="phone-link-error">{otpError}</p>}
+                <button
+                  className="phone-link-btn"
+                  onClick={handleSendOtp}
+                  disabled={phoneBusy}
+                >
+                  {phoneBusy ? 'Sending OTP...' : 'Send OTP'}
+                </button>
+                <button
+                  className="phone-link-btn-secondary"
+                  onClick={() => { setPhoneStep('enter'); setPhoneInput(''); }}
+                >
+                  Change Number
+                </button>
+              </>
+            )}
+
+            {phoneStep === 'otp' && (
+              <>
+                <div className="phone-link-icon">🔐</div>
+                <h3 className="phone-link-title">Verify OTP</h3>
+                <p className="phone-link-desc">Enter the OTP sent to {phoneInput}</p>
+                <input
+                  type="tel"
+                  className="phone-link-input"
+                  placeholder="Enter OTP"
+                  value={otpInput}
+                  onChange={(e) => { setOtpInput(e.target.value.replace(/\D/g, '')); setOtpError(''); }}
+                  maxLength="6"
+                  disabled={phoneBusy}
+                />
+                {otpError && <p className="phone-link-error">{otpError}</p>}
+                <button
+                  className="phone-link-btn"
+                  onClick={handleVerifyOtp}
+                  disabled={phoneBusy || !otpInput.trim()}
+                >
+                  {phoneBusy ? 'Verifying...' : 'Verify & Continue'}
+                </button>
+                <button
+                  className="phone-link-btn-secondary"
+                  onClick={handleSendOtp}
+                  disabled={phoneBusy}
+                >
+                  Resend OTP
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Login Popup */}
+      {showLoginPopup && (
+        <div className="modal-overlay" onClick={() => setShowLoginPopup(false)}>
+          <div className="offers-login-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="offers-login-popup-icon">🔐</div>
+            <h3 className="offers-login-popup-title">Please Login / Signup</h3>
+            <p className="offers-login-popup-desc">to purchase this subscription</p>
+            <div className="offers-login-popup-actions">
+              <button className="offers-login-popup-btn login" onClick={() => { setShowLoginPopup(false); navigate('/login', { state: { mode: 'login', from: { pathname: '/offers' } } }); }}>Login</button>
+              <button className="offers-login-popup-btn signup" onClick={() => { setShowLoginPopup(false); navigate('/login', { state: { mode: 'signup', from: { pathname: '/offers' } } }); }}>Signup</button>
+            </div>
+            <button className="offers-login-popup-close" onClick={() => setShowLoginPopup(false)}>Maybe later</button>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Navigation */}
       <BottomNav active="home" />
+
+      <PaymentMethodModal
+        open={showPaymentModal}
+        onClose={() => { setShowPaymentModal(false); setPaymentDeal(null); }}
+        onSelect={handlePaymentMethodSelect}
+        amount={paymentDeal?.discountedPrice}
+      />
     </div>
   );
 };

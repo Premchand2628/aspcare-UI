@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
+import { getStoredPhone } from '../utils/apiMappers';
 import '../styles/OrderDetail.css';
 
 const OrderDetail = () => {
@@ -18,6 +20,8 @@ const OrderDetail = () => {
   const [rescheduledReason, setRescheduledReason] = useState('');
   const [availability, setAvailability] = useState({});
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState(null);
 
   useEffect(() => {
     fetchOrderDetail();
@@ -25,19 +29,16 @@ const OrderDetail = () => {
 
   const fetchOrderDetail = async () => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getValidatedAuthToken();
       if (!authToken) {
         setLoading(false);
         return;
       }
       
-      const headers = {
+      const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch('/bookings/me', {
         method: 'GET',
@@ -66,14 +67,10 @@ const OrderDetail = () => {
   const handleCancelClick = async () => {
     setCancelLoading(true);
     try {
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch(`/bookings/${id}/cancel-quote`, {
         method: 'GET',
@@ -101,14 +98,10 @@ const OrderDetail = () => {
 
     setCancelling(true);
     try {
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch(`/bookings/${id}/cancel-confirm`, {
         method: 'POST',
@@ -144,14 +137,10 @@ const OrderDetail = () => {
   const fetchAvailability = async (date, serviceType) => {
     setLoadingSlots(true);
     try {
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch(`/bookings/availability?date=${date}&serviceType=${serviceType}`, {
         method: 'GET',
@@ -183,14 +172,10 @@ const OrderDetail = () => {
     }
 
     try {
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch(`/bookings/${id}`, {
         method: 'PUT',
@@ -212,6 +197,51 @@ const OrderDetail = () => {
     } catch (error) {
       console.error('Error updating booking:', error);
       alert(`Error rescheduling booking (Order#: ${getOrderRef()})`);
+    }
+  };
+
+  const handleDownloadInvoice = async () => {
+    setDownloadingInvoice(true);
+    try {
+      const authToken = getValidatedAuthToken();
+      if (!authToken) {
+        alert('Please login to download invoice');
+        return;
+      }
+
+      const bookingId = order?.id || id;
+      const headers = withAuthHeader({ 'Accept': 'application/pdf' });
+      const response = await fetch(`/bookings/${bookingId}/invoice`, {
+        method: 'GET',
+        headers
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          alert('Invoice is not available for this booking');
+          return;
+        }
+        const errorData = await response.json().catch(() => null);
+        alert(errorData?.message || 'Failed to download invoice');
+        return;
+      }
+
+      const blob = await response.blob();
+      const invNum = response.headers.get('X-Invoice-Number');
+      if (invNum) setInvoiceNumber(invNum);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Invoice_${invNum || getOrderRef()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      alert('Failed to download invoice');
+    } finally {
+      setDownloadingInvoice(false);
     }
   };
 
@@ -239,87 +269,116 @@ const OrderDetail = () => {
     : (order?.id ?? id));
 
   const displayOrderCode = getOrderRef();
+  const userPhone = getStoredPhone() || order?.phone || '';
+
+  const formatDateDisplay = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase().replace(/ /g, '-');
+  };
+
+  const formatTimeSlotDisplay = (slot) => {
+    if (!slot) return '';
+    return slot.replace(/-/g, '-').toUpperCase();
+  };
 
   return (
     <div className="page-container">
-      {/* Header */}
-      <header className="header">
-        <button className="back-btn-inline" onClick={() => navigate(-1)}>←</button>
-        <div className="user-info"></div>
-      </header>
-
-      {/* Order Header */}
-      <div className="order-header">
-        <h1>Order#: {displayOrderCode}</h1>
-        <div className="order-title-row">
-          <h2>{order?.washType || order?.serviceType || 'Service'}</h2>
-          <h2>{order?.phone || localStorage.getItem('userPhone') || 'N/A'}</h2>
-        </div>
+      {/* Back Button + Order Header */}
+      <div className="od-top-bar">
+        <button className="od-back-btn" onClick={() => navigate(-1)}>←</button>
+        <h1 className="od-order-number">Order#: {displayOrderCode}</h1>
       </div>
 
-      {/* Service Card */}
-      <div className="order-service-card">
-        <img src="/images/car-wash-illustration.png" alt="Service" className="service-detail-image" />
-        <div className="service-detail-info">
-          <h3>{order?.centreName || 'Service Centre'}</h3>
-          <p className="location">📍 {order?.address || 'Address not available'}</p>
-        </div>
+      {/* Service Type & Phone Row */}
+      <div className="od-title-row">
+        <span className="od-service-type">{order?.serviceType || 'Home'}</span>
+        <span className="od-phone">{userPhone}</span>
       </div>
 
-      {/* Booking Details */}
-      <div className="order-booking-info">
-        <p className="booking-time">
-          {formatBookingDateTime(order?.bookingDate, order?.timeSlot)}
-        </p>
+      {/* Service Image */}
+      <div className="od-image-wrapper">
+        <img
+          className="od-service-image"
+          src="/images/suv.png"
+          alt="Car Wash Service"
+        />
       </div>
 
-      {/* Action Buttons */}
-      {order && order.status && order.status.toLowerCase() === 'cancelled' ? (
-        <div className="cancelled-badge-detail">
-          <span className="cancelled-icon">❌</span>
-          <span className="cancelled-text">Order Cancelled</span>
-        </div>
-      ) : (
-        <>
-          <div className="order-actions-main">
-            <button 
-              className="reschedule-btn-main"
-              onClick={handleRescheduleClick}
-            >
-              Re-schedule
-            </button>
-            <button 
-              className="cancel-btn"
-              onClick={handleCancelClick}
-              disabled={cancelLoading}
-            >
-              {cancelLoading ? 'Loading...' : 'Cancel'}
-            </button>
-          </div>
-          <button className="download-btn">Download Invoice</button>
-        </>
+      {/* Center Name */}
+      <h2 className="od-center-name">{order?.centreName || 'ASP Care'}</h2>
+
+      {/* Location */}
+      <div className="od-location">
+        <span className="od-location-pin">📍</span>
+        <span className="od-location-text">{order?.address || 'N/A'}</span>
+      </div>
+
+      {/* Date & Time */}
+      <p className="od-datetime">
+        {formatDateDisplay(order?.bookingDate)},&nbsp;&nbsp;&nbsp;{formatTimeSlotDisplay(order?.timeSlot)}
+      </p>
+
+      {/* Subscription Redeemed - only when true */}
+      {order?.subscriptionRedeemed && (
+        <p className="od-subscription-redeemed">Subscription redeemed</p>
       )}
 
       {/* Price Breakdown */}
-      <div className="order-price-breakdown">
-        <div className="price-row">
-          <span>Sub total</span>
-          <span>{formatAmount(order?.originalAmount)}</span>
+      <div className="od-price-breakdown">
+        <div className="od-price-row">
+          <span className="od-price-label">Sub total</span>
+          <span className="od-price-colon">:</span>
+          <span className="od-price-value">{formatAmount(order?.originalAmount)}</span>
         </div>
-        <div className="price-row">
-          <span>Water discount applied</span>
-          <span>-{formatAmount(order?.waterDiscountApplied)}</span>
+        <div className="od-price-row">
+          <span className="od-price-label">Membership discount</span>
+          <span className="od-price-colon">:</span>
+          <span className="od-price-value">{formatAmount(order?.membershipDiscount ?? order?.waterDiscountApplied)}</span>
         </div>
-        <div className="price-row">
-          <span>Discount percent applied</span>
-          <span>{formatPercent(order?.discountPercentApplied)}</span>
+        <div className="od-price-row">
+          <span className="od-price-label">Signup Bonus</span>
+          <span className="od-price-colon">:</span>
+          <span className="od-price-value">{formatAmount(order?.signupBonus ?? 0)}</span>
         </div>
-        <div className="price-divider"></div>
-        <div className="price-row total">
-          <span><strong>Grand Total</strong></span>
-          <span><strong>{formatAmount(order?.payableAmount)}</strong></span>
+        <div className="od-price-divider"></div>
+        <div className="od-price-row od-total-row">
+          <span className="od-price-label"><strong>Grand Total</strong></span>
+          <span className="od-price-colon">:</span>
+          <span className="od-price-value"><strong>{formatAmount(order?.payableAmount)}</strong></span>
         </div>
       </div>
+
+      {/* Status Badge or Action Buttons */}
+      {String(order?.status || '').toLowerCase() === 'completed' ? (
+        <div className="od-status-badge od-status-completed">completed</div>
+      ) : String(order?.status || '').toLowerCase() === 'cancelled' ? (
+        <div className="od-status-badge od-status-cancelled">cancelled</div>
+      ) : String(order?.status || '').toLowerCase() === 'in_servicing' ? (
+        <div className="od-status-badge od-status-in-servicing">IN_SERVICING</div>
+      ) : (
+        <div className="od-actions-row">
+          <button className="od-reschedule-btn" onClick={handleRescheduleClick}>Re-schedule</button>
+          <button className="od-cancel-btn" onClick={handleCancelClick} disabled={cancelLoading}>
+            {cancelLoading ? 'Loading...' : 'cancel'}
+          </button>
+        </div>
+      )}
+      {String(order?.status || '').toLowerCase() === 'completed' && (
+        <div className="od-invoice-section">
+          <button
+            className="od-download-btn"
+            onClick={handleDownloadInvoice}
+            disabled={downloadingInvoice}
+          >
+            {downloadingInvoice ? 'Downloading...' : '📄 Download Invoice'}
+          </button>
+          {invoiceNumber && (
+            <p className="od-invoice-number">Invoice #: {invoiceNumber}</p>
+          )}
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       <BottomNav active="orders" />

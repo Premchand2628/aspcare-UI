@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
+import { readActiveMembershipCache, writeActiveMembershipCache } from '../utils/bookingsCache';
 import '../styles/MembershipPlans.css';
 
 const MembershipPlans = () => {
@@ -83,18 +85,17 @@ const MembershipPlans = () => {
   }, []);
 
   const fetchActiveMembership = async () => {
+    const cached = readActiveMembershipCache();
+    if (cached) { setActiveMembership(cached); setLoadingMembership(false); return; }
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getValidatedAuthToken();
       if (!authToken) {
         setLoadingMembership(false);
         return;
       }
-      const headers = {
+      const headers = withAuthHeader({
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch('/memberships/active/me', {
         method: 'GET',
@@ -104,6 +105,7 @@ const MembershipPlans = () => {
       if (response.ok) {
         const data = await response.json();
         setActiveMembership(data);
+        writeActiveMembershipCache(data);
       } else {
         setActiveMembership(null);
       }
@@ -166,15 +168,10 @@ const MembershipPlans = () => {
         return;
       }
 
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      };
-      
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       let requestBody = {
         phone: phone,
@@ -213,7 +210,7 @@ const MembershipPlans = () => {
       // Activate the membership if status is HOLD
       if (data.status === 'HOLD') {
         try {
-          const activateResponse = await fetch(`/memberships/${data.id}/activate`, {
+          const activateResponse = await fetch(`/memberships/${data.id}/status?value=ACTIVE`, {
             method: 'PUT',
             headers: headers
           });

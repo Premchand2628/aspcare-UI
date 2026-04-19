@@ -325,7 +325,6 @@
   color: white;
   margin: 0;
 }
-}
 
 .card-cta {
   font-size: 11px;
@@ -533,4 +532,20 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 10px;
   }
+}
+
+@media (min-width: 768px) {
+  .rewards-header { padding: 24px; }
+  .rewards-header h1 { font-size: 26px; }
+  .total-drops-card { padding: 20px; border-radius: 18px; }
+  .drops-icon { font-size: 42px; }
+  .drops-amount { font-size: 32px; }
+  .drops-label { font-size: 14px; }
+  .drops-list { gap: 10px; }
+  .drops-item { padding: 14px 16px; }
+  .item-label { font-size: 15px; }
+  .item-value { font-size: 15px; }
+  .redemption-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .redemption-card { padding: 16px; border-radius: 14px; }
+  .messages-container { padding: 16px; gap: 14px; }
 }

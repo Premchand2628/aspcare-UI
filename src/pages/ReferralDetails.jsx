@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { withAuthHeader } from '../utils/auth';
 import '../styles/ReferralDetails.css';
 
 const ReferralDetails = () => {
@@ -15,17 +16,12 @@ const ReferralDetails = () => {
     // Fetch referral details from API
     const fetchReferralDetails = async () => {
       try {
-        const phone = localStorage.getItem('userPhone');
-        const authToken = localStorage.getItem('authToken');
-        const headers = {
+        const headers = withAuthHeader({
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        };
-        if (authToken) {
-          headers.Authorization = `Bearer ${authToken}`;
-        }
+        });
 
-        const response = await fetch(`/coupons/referral-details?userPhone=${phone}`, {
+        const response = await fetch('/coupons/referral-details/me', {
           method: 'GET',
           headers
         });
@@ -100,14 +96,10 @@ const ReferralDetails = () => {
         return;
       }
 
-      const authToken = localStorage.getItem('authToken');
-      const headers = {
+      const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      };
-      if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-      }
+      });
 
       const response = await fetch('/coupons/generate', {
         method: 'POST',
@@ -138,7 +130,9 @@ const ReferralDetails = () => {
       );
       
       const whatsappUrl = `https://wa.me/?text=${text}`;
-      window.open(whatsappUrl, '_blank');
+      if (whatsappUrl.startsWith('https://wa.me/')) {
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      }
     } catch (error) {
       console.error('Error generating coupon:', error);
       alert('Failed to generate coupon. Please try again.');
