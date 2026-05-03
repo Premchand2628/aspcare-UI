@@ -97,7 +97,7 @@ const Offers = () => {
       if (!data) {
         const response = await fetch('/deal-prices', {
           method: 'GET',
-          headers: { 'Accept': 'application/json' }
+          headers: withAuthHeader({ Accept: 'application/json' })
         });
 
         if (!response.ok) {
@@ -386,7 +386,7 @@ const Offers = () => {
       });
       const data = await res.json();
       setPhoneIsNew(!data.exists);
-      setPhoneExistingEmail(data.email || '');
+      setPhoneExistingEmail('');
       setPhoneStep('confirm');
     } catch {
       setPhoneError('Unable to verify phone. Please try again.');
@@ -562,7 +562,7 @@ const Offers = () => {
               <button
                 key={carType}
                 type="button"
-                className="offer-category-card"
+                className={`offer-category-card cat-${carType.toLowerCase()}`}
                 onClick={() => {
                   setSelectedCarType(carType);
                   setPriceSort('');
@@ -571,13 +571,15 @@ const Offers = () => {
                 }}
               >
                 <div className="offer-category-cap">
+                  <img className="offer-category-icon" src={getDealImageByCarType(carType)} alt="" />
                   <div className="offer-category-title">{carType}</div>
                 </div>
                 <div className="offer-category-body">
                   <div className="offer-category-extra">
-                    Get upto <span className="offer-category-extra-pill">{getTopDiscountForCarType(carType)}%</span> off
+                    <span className="offer-category-extra-label">Save upto</span>
+                    <span className="offer-category-extra-pill">{getTopDiscountForCarType(carType)}%</span>
                   </div>
-                  <div className="offer-category-note">increase your drops to get additional gifts</div>
+                  <div className="offer-category-note">More washes, more gifts 🎁</div>
                   <div className="offer-category-cta">Tap to explore</div>
                 </div>
               </button>
@@ -589,10 +591,13 @@ const Offers = () => {
       {!loading && !error && selectedCarType && (
         <div className="deals-view">
           <div className="deals-grid">
-            {dealsToDisplay.map((deal, index) => (
+            {dealsToDisplay.map((deal, index) => {
+              const washKey = normalizeWashType(deal.washType).toLowerCase().replace(/\+/g, '-');
+              const savings = Math.max(0, Math.round(Number(deal.originalPrice || 0) - Number(deal.discountedPrice || 0)));
+              return (
               <div
                 key={deal.id}
-                className={`deal-detail-card ${!deal.available ? 'missing' : ''} ${selectedDealId === deal.id ? 'selected' : ''}`}
+                className={`deal-detail-card wash-${washKey} ${!deal.available ? 'missing' : ''} ${selectedDealId === deal.id ? 'selected' : ''}`}
                 onClick={() => {
                   if (!deal.available) return;
                   setSelectedDealId(deal.id);
@@ -618,6 +623,9 @@ const Offers = () => {
                     <div className="deal-card-pricing">
                       <span className="deal-original-price">₹{Math.round(deal.originalPrice)}</span>
                       <span className="deal-final-price">₹{Math.round(deal.discountedPrice)}/-</span>
+                      {savings > 0 && (
+                        <span className="deal-savings">You save ₹{savings}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -633,7 +641,8 @@ const Offers = () => {
                   </label>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {selectedDeal && selectedDeal.available && (
@@ -739,7 +748,7 @@ const Offers = () => {
                 <p className="phone-link-desc">
                   {phoneIsNew
                     ? 'Get a signup bonus of ₹20 off on your first booking!'
-                    : `${phoneInput} is already registered with ${phoneExistingEmail}. Do you wish to continue?`
+                    : `${phoneInput} is already registered. Do you wish to continue?`
                   }
                 </p>
                 {otpError && <p className="phone-link-error">{otpError}</p>}

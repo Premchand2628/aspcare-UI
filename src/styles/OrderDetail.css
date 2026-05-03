@@ -895,3 +895,22 @@
   font-size: 18px;
   font-weight: 700;
 }
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .order-detail-header h1 { font-size: 26px; }
+  .service-image { width: 200px; height: 200px; }
+  .service-type { font-size: 24px; }
+  .order-number { font-size: 20px; }
+  .info-card { padding: 22px; border-radius: 16px; }
+  .info-label { font-size: 15px; }
+  .info-value { font-size: 15px; }
+  .status-badge { font-size: 20px; padding: 12px 24px; }
+  .actions-section { gap: 14px; }
+  .action-btn { padding: 16px; font-size: 16px; border-radius: 14px; }
+  .update-booking-btn { padding: 18px; font-size: 17px; }
+  .reason-input { font-size: 15px; padding: 14px; }
+  .completed-badge-detail { font-size: 20px; padding: 18px; }
+  .completed-text { font-size: 20px; }
+  .slot-btn { padding: 14px 12px; font-size: 15px; }
+}

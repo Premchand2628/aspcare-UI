@@ -867,3 +867,23 @@
   .calendar-btn { padding: 12px 8px; min-height: 70px; }
   .options-group.timeslots-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .chatbot-header h1 { font-size: 22px; }
+  .menu-greeting h2 { font-size: 36px; }
+  .menu-greeting p { font-size: 18px; }
+  .bot-options { max-width: 560px; }
+  .bot-option { padding: 24px; }
+  .bot-icon { font-size: 40px; }
+  .bot-name { font-size: 20px; }
+  .bot-desc { font-size: 15px; }
+  .chat-header h2 { font-size: 20px; }
+  .message { max-width: 65%; }
+  .message p { font-size: 16px; padding: 16px; }
+  .option-btn { font-size: 16px; padding: 14px 18px; }
+  .input-container input { font-size: 16px; }
+  .send-btn { font-size: 16px; padding: 12px 22px; }
+  .calendar-grid { grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .options-group.timeslots-grid { grid-template-columns: repeat(4, 1fr); }
+}

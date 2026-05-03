@@ -1,5 +1,5 @@
 :root {
-  --app-max-width: 100%;
+  --app-max-width: 1400px;
   --app-height: 100vh;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
@@ -68,6 +68,19 @@ body {
   margin: 0 auto;
   padding: calc(20px + var(--safe-area-top)) calc(20px + var(--safe-area-right)) calc(100px + var(--safe-area-bottom)) calc(20px + var(--safe-area-left));
   overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  .page-container {
+    padding: calc(28px + var(--safe-area-top)) calc(36px + var(--safe-area-right)) calc(100px + var(--safe-area-bottom)) calc(36px + var(--safe-area-left));
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.06);
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-container {
+    padding: calc(32px + var(--safe-area-top)) calc(48px + var(--safe-area-right)) calc(100px + var(--safe-area-bottom)) calc(48px + var(--safe-area-left));
+  }
 }
 
 img,
@@ -363,5 +376,56 @@ button:active {
 
   p {
     font-size: 15px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-container {
+    max-width: 70%;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  h2 {
+    font-size: 26px;
+  }
+
+  h3 {
+    font-size: 22px;
+  }
+
+  p {
+    font-size: 16px;
+  }
+
+  button {
+    font-size: 16px;
+    padding: 14px 24px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .page-container {
+    max-width: 60%;
+    padding: calc(36px + var(--safe-area-top)) calc(56px + var(--safe-area-right)) calc(100px + var(--safe-area-bottom)) calc(56px + var(--safe-area-left));
+  }
+
+  h1 {
+    font-size: 36px;
+  }
+
+  h2 {
+    font-size: 28px;
+  }
+
+  h3 {
+    font-size: 24px;
+  }
+
+  p {
+    font-size: 17px;
+    line-height: 1.7;
   }
 }

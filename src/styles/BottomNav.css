@@ -99,3 +99,26 @@
      font-size: 12px;
   }
 }
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .bottom-nav {
+    max-width: 70%;
+    padding: 16px 40px calc(16px + var(--safe-area-bottom));
+    border-radius: 16px 16px 0 0;
+  }
+
+  .nav-item {
+    padding: 10px 18px;
+    gap: 6px;
+  }
+
+  .nav-icon { font-size: 26px; }
+  .nav-label { font-size: 13px; }
+}
+
+@media (min-width: 1440px) {
+  .bottom-nav { max-width: 60%; }
+  .nav-icon { font-size: 28px; }
+  .nav-label { font-size: 14px; }
+}

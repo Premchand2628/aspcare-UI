@@ -272,3 +272,47 @@
   color: #dc2626;
   font-weight: 600;
 }
+
+/* ─── Small phones (≤480px) ─── */
+@media (max-width: 480px) {
+  .pm-header { padding: 12px 10px; border-radius: 12px; }
+  .pm-header h1 { font-size: 18px; }
+  .pm-back-btn { width: 34px; height: 34px; font-size: 20px; }
+  .pm-header-spacer { width: 34px; }
+  .pm-content { padding: 12px 10px; gap: 12px; }
+  .pm-section-header h2 { font-size: 15px; }
+  .pm-add-label { font-size: 14px; }
+  .pm-form-group label { font-size: 11px; }
+  .pm-form-group input { font-size: 14px; padding: 10px 12px; }
+  .pm-save-btn { font-size: 14px; padding: 12px; }
+}
+
+/* ─── Tablet (≥768px) ─── */
+@media (min-width: 768px) {
+  .pm-header { padding: 20px 18px; border-radius: 18px; }
+  .pm-header h1 { font-size: 24px; }
+  .pm-back-btn { width: 42px; height: 42px; font-size: 24px; }
+  .pm-header-spacer { width: 42px; }
+  .pm-content { padding: 24px 20px; gap: 18px; }
+  .pm-section { border-radius: 16px; }
+  .pm-section-header { padding: 18px 20px 14px; }
+  .pm-section-icon { font-size: 26px; }
+  .pm-section-header h2 { font-size: 18px; }
+  .pm-add-btn { padding: 18px 20px; }
+  .pm-add-label { font-size: 16px; }
+  .pm-form { padding: 0 20px 20px; }
+  .pm-form-group label { font-size: 13px; }
+  .pm-form-group input { font-size: 16px; padding: 14px 16px; border-radius: 12px; }
+  .pm-save-btn { font-size: 16px; padding: 16px; border-radius: 14px; }
+}
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .pm-header h1 { font-size: 26px; }
+  .pm-content { padding: 28px 24px; gap: 20px; }
+  .pm-section-header h2 { font-size: 20px; }
+  .pm-add-label { font-size: 17px; }
+  .pm-form-group input { font-size: 16px; }
+  .pm-save-btn { font-size: 17px; max-width: 400px; margin-left: auto; margin-right: auto; display: block; }
+  .pm-form-row { gap: 16px; }
+}
