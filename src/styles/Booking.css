@@ -1,13 +1,14 @@
 /* Booking Header with Address Search */
 .booking-header {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  right: 20px;
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
   display: flex;
   align-items: center;
   gap: 10px;
-  z-index: 100;
+  z-index: 10;
+  margin-bottom: 16px;
 }
 
 .booking-header .back-btn-absolute {
@@ -211,7 +212,7 @@
 
 .centre-address-input {
   font-weight: 400;
-  font-size: 7px;
+  font-size: 12px;
   color: white;
   background: transparent;
   border: none;
@@ -657,6 +658,15 @@
   width: 18px;
   border-radius: 99px;
   background: #5E4DB2;
+}
+
+/* Water + Wash Type combined row (desktop) */
+.water-wash-row {
+  margin-bottom: 15px;
+}
+
+.water-wash-row .booking-wash-type-in-row {
+  display: none;
 }
 
 /* Water Option Section */
@@ -1339,7 +1349,82 @@
   }
 
   .centre-name {
+    font-size: 17px;
+  }
+
+  .centre-address {
+    font-size: 14px;
+  }
+
+  .centre-address-input {
+    font-size: 14px;
+  }
+
+  .booking-info-card {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .booking-schedule {
     font-size: 15px;
+  }
+
+  .booking-wash-type-standalone {
+    padding: 12px 16px;
+    font-size: 15px;
+    gap: 10px;
+  }
+
+  .booking-wash-type-standalone .wash-label-text {
+    font-size: 13px;
+  }
+
+  .wash-btn {
+    padding: 6px 16px;
+    font-size: 14px;
+  }
+
+  .vehicle-selection {
+    padding: 16px;
+  }
+
+  .vehicle-selection h3 {
+    font-size: 13px;
+  }
+
+  .vehicle-icon {
+    width: 70px;
+    height: 70px;
+    font-size: 30px;
+  }
+
+  .vehicle-type-card h4 {
+    font-size: 15px;
+  }
+
+  .vehicle-type-card p {
+    font-size: 12px;
+  }
+
+  .price-label {
+    font-size: 16px;
+  }
+
+  .price-value {
+    font-size: 28px;
+  }
+
+  .vehicle-number-input {
+    font-size: 14px;
+    padding: 14px 10px;
+  }
+
+  .vehicle-number-input::placeholder {
+    font-size: 13px;
+  }
+
+  .water-option label {
+    font-size: 14px;
   }
 
   .water-option-section {
@@ -1375,5 +1460,496 @@
   .center-select-button {
     padding: 12px 25px;
     font-size: 15px;
+  }
+}
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .booking-header { top: 24px; left: 24px; right: 24px; }
+  .booking-home-banner p { font-size: 14px; }
+
+  .map-section { height: 380px; }
+  .map-container { height: 380px; }
+
+  .booking-info-card { padding: 24px; border-radius: 20px; }
+  .booking-centre { font-size: 16px; gap: 8px; }
+  .centre-name { font-size: 19px; }
+  .centre-address { font-size: 15px; }
+  .centre-address-input { font-size: 15px; padding: 6px 4px; }
+  .booking-schedule { font-size: 16px; gap: 12px; }
+  .points-badge { width: 44px; height: 44px; font-size: 20px; }
+
+  /* Merge wash type + water option into one row */
+  .booking-wash-type-standalone:not(.booking-wash-type-in-row) {
+    display: none;
+  }
+
+  .water-wash-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 15px;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    flex-wrap: wrap;
+  }
+
+  .water-wash-row .booking-wash-type-in-row {
+    display: inline-flex;
+    border: 1.5px solid #e0e0e0;
+    padding: 14px 18px;
+    margin: 0;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    font-size: 16px;
+    gap: 12px;
+    flex: 1 1 auto;
+  }
+
+  .water-wash-row .booking-wash-type-in-row .wash-label-text { font-size: 14px; }
+
+  .water-wash-row .water-option-section {
+    padding: 16px 20px;
+    margin: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    background: #fff;
+    border-radius: 14px;
+    flex: 1 1 auto;
+  }
+
+  .wash-btn { padding: 8px 20px; font-size: 15px; border-radius: 20px; }
+
+  .water-option label { font-size: 15px; }
+  .water-option input[type="radio"] { width: 18px; height: 18px; }
+
+  .vehicle-selection { padding: 20px; border-radius: 16px; }
+  .vehicle-selection h3 { font-size: 14px; margin-bottom: 14px; }
+  .vehicle-icon { width: 80px; height: 80px; font-size: 34px; margin-bottom: 10px; border-width: 3px; }
+  .vehicle-type-card h4 { font-size: 16px; margin-bottom: 4px; }
+  .vehicle-type-card p { font-size: 13px; }
+  .vehicle-type-card { padding: 12px 8px; }
+  .vehicle-train-page { gap: 20px; }
+
+  .booking-summary-row { gap: 20px; }
+  .price-display { padding: 24px; border-radius: 18px; }
+  .price-label { font-size: 17px; }
+  .price-value { font-size: 30px; }
+  .price-value.hint { font-size: 14px; }
+  .vehicle-number-input { font-size: 16px; padding: 16px 12px; border-radius: 12px; }
+  .vehicle-number-input::placeholder { font-size: 14px; }
+
+  .review-btn { padding: 20px; font-size: 18px; max-width: 500px; margin-left: auto; margin-right: auto; display: block; border-radius: 18px; }
+  .benefits-note { font-size: 13px; }
+
+  .address-search input { font-size: 16px; }
+  .location-selection h3 { font-size: 20px; }
+  .location-selection p { font-size: 16px; }
+  .center-select-button { padding: 14px 28px; font-size: 16px; }
+
+  .calendar-modal { max-width: 420px; padding: 36px; }
+  .calendar-modal h3 { font-size: 22px; }
+  .timeslot-modal { max-width: 480px; padding: 36px; }
+  .timeslot-modal h3 { font-size: 22px; }
+  .timeslots-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .timeslot-btn { padding: 14px; font-size: 15px; }
+}
+
+
+/* ============================================
+   Hide map but keep DOM ref alive for hooks
+   ============================================ */
+.map-section.map-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  left: -9999px;
+  top: -9999px;
+}
+
+/* ============================================
+   Select Address button (above schedule card)
+   ============================================ */
+.select-address-row {
+  margin: 0 0 16px;
+}
+
+.select-address-btn {
+  width: 100%;
+  background: #5E4DB2;
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 16px 18px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 4px 14px rgba(94, 77, 178, 0.3);
+  transition: transform 0.15s ease, filter 0.2s ease;
+}
+
+.select-address-btn:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.select-address-btn .select-address-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+}
+
+.select-address-btn:not(.has-selection) .select-address-content {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.select-address-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.select-address-text {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.select-address-change {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  opacity: 0.95;
+}
+
+/* ============================================
+   Address List Modal
+   ============================================ */
+.address-list-modal,
+.address-form-modal {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 18px 18px 16px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.address-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.address-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.address-modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #f1f3f7;
+  color: #1a1a1a;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.address-modal-close:hover {
+  background: #e3e7ee;
+}
+
+.address-empty-state {
+  padding: 24px 8px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.address-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.address-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fafbfc;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.address-item.selected {
+  border-color: #5E4DB2;
+  box-shadow: 0 0 0 2px rgba(94, 77, 178, 0.18);
+  background: #f5f3ff;
+}
+
+.address-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: 100%;
+}
+
+.address-item-label {
+  display: inline-block;
+  align-self: flex-start;
+  background: #ede9fe;
+  color: #5E4DB2;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.address-item-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.address-item-text {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+.address-item-landmark {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.address-item-phone {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.address-item-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.address-item-edit,
+.address-item-delete {
+  background: none;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.address-item-edit {
+  color: #5E4DB2;
+  border-color: rgba(94, 77, 178, 0.35);
+}
+
+.address-item-edit:hover {
+  background: #ede9fe;
+}
+
+.address-item-delete {
+  color: #c0392b;
+  border-color: rgba(192, 57, 43, 0.3);
+}
+
+.address-item-delete:hover {
+  background: #fdecea;
+}
+
+.add-new-address-btn {
+  margin-top: 14px;
+  width: 100%;
+  background: #5E4DB2;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(94, 77, 178, 0.28);
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.add-new-address-btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   Address Form Modal
+   ============================================ */
+.address-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.address-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.address-form-row.two-col {
+  flex-direction: row;
+  gap: 10px;
+}
+
+.address-form-row.two-col > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.address-form-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  letter-spacing: 0.3px;
+}
+
+.address-form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+  color: #1a1a1a;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.address-form-input:focus {
+  border-color: #5E4DB2;
+  box-shadow: 0 0 0 3px rgba(94, 77, 178, 0.18);
+}
+
+.address-form-input::placeholder {
+  color: #9ca3af;
+}
+
+.address-label-options {
+  display: flex;
+  gap: 8px;
+}
+
+.address-label-chip {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.address-label-chip.active {
+  background: #5E4DB2;
+  color: #fff;
+  border-color: #5E4DB2;
+}
+
+.address-form-error {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #c0392b;
+  background: #fdecea;
+  border-left: 3px solid #c0392b;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+.address-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.address-form-cancel,
+.address-form-save {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.address-form-cancel {
+  background: #f1f3f7;
+  color: #1a1a1a;
+}
+
+.address-form-cancel:hover {
+  background: #e3e7ee;
+}
+
+.address-form-save {
+  background: #5E4DB2;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(94, 77, 178, 0.28);
+}
+
+.address-form-save:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+  .address-form-row.two-col {
+    flex-direction: column;
   }
 }

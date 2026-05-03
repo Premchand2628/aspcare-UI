@@ -254,3 +254,17 @@
     border-radius: 15px;
   }
 }
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .terms-header h1 { font-size: 30px; }
+  .terms-subtitle { font-size: 18px; }
+  .thank-you-message h2 { font-size: 26px; }
+  .thank-you-message p { font-size: 16px; }
+  .summary-section { padding: 24px; border-radius: 16px; }
+  .summary-section h3 { font-size: 18px; }
+  .summary-row { font-size: 16px; }
+  .terms-checkbox label { font-size: 16px; }
+  .submit-btn, .report-btn { padding: 20px; font-size: 17px; max-width: 480px; margin-left: auto; margin-right: auto; display: block; }
+  .action-buttons { gap: 14px; }
+}

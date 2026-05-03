@@ -1,0 +1,1237 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_LOKI",
+      "label": "Loki",
+      "description": "Loki datasource for log queries",
+      "type": "datasource",
+      "pluginId": "loki",
+      "pluginName": "Loki"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "9.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "loki",
+      "name": "Loki",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "logs",
+      "name": "Logs",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Prod - All Service Logs",
+      "description": "Live log stream from all production services",
+      "type": "logs",
+      "id": 1,
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{env=\"prod\"} | drop __error__",
+          "queryType": "range",
+          "maxLines": 500
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "title": "OTP Login Auth - Tracking Table [REMOVED]",
+      "description": "REMOVED for security. Panel previously rendered raw OTPs and phone numbers to any user with Grafana access. Source log lines are now masked by logback before shipping to Loki.",
+      "type": "text",
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Panel removed.** Previously exposed OTPs + phone numbers to anyone with Grafana access. The backend logback config now masks OTP / phone / password / Authorization values in the source log lines themselves."
+      }
+    },
+    {
+      "title": "OTP Login Auth - Verify OTP & All Requests",
+      "description": "All auth service HTTP request & response log lines. Columns: Timestamp, Request-ID, Phone Number, Request (method + path), Response (status + body). Response column is blank on request rows.",
+      "type": "table",
+      "id": 3,
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{env=\"prod\"} |= \"[auth-user-service]\" |= \"HttpRequestResponseLoggingFilter\" |~ \"HTTP_REQUEST|HTTP_RESPONSE\" | pattern `<_>HTTP_<kind> transactionId=<transactionId> method=<method> path=<path> <rest>` | regexp `status=(?P<status>\\d+)` | regexp `\"(?:mobileNumber|phoneNumber|mobile)\"\\s*:\\s*\"(?P<phoneNumber>\\d+)\"` | regexp `body=(?P<body>\\{.*\\})\\s*$` | label_format request=`{{.method}} {{.path}}`,response=`{{if .status}}{{.status}} {{.body}}{{end}}`",
+          "queryType": "range",
+          "maxLines": 500
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "line": true,
+              "id": true,
+              "tsNs": true,
+              "env": true,
+              "filename": true,
+              "job": true,
+              "host": true,
+              "instance": true,
+              "labels": true,
+              "labelTypes": true,
+              "traceID": true,
+              "detected_level": true,
+              "service_name": true,
+              "severity": true,
+              "method": true,
+              "path": true,
+              "status": true,
+              "body": true,
+              "durationMs": true,
+              "logger": true,
+              "thread": true,
+              "level": true,
+              "msg": true,
+              "kind": true,
+              "rest": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "transactionId": 1,
+              "phoneNumber": 2,
+              "request": 3,
+              "response": 4
+            },
+            "renameByName": {
+              "Time": "Timestamp",
+              "transactionId": "Request-ID",
+              "phoneNumber": "Phone Number",
+              "request": "Request",
+              "response": "Response"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Response"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^2\\d{2} .*",
+                      "result": {
+                        "color": "green",
+                        "index": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^4\\d{2} .*",
+                      "result": {
+                        "color": "orange",
+                        "index": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^5\\d{2} .*",
+                      "result": {
+                        "color": "red",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request-ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 310
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Filter other services by this Request-ID",
+                    "url": "d/${__dashboard.uid}/${__dashboard}?${__url_time_range}&var-requestId=${__value.raw}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Phone Number"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 280
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "count"
+          ],
+          "countRows": true
+        },
+        "sortBy": [
+          {
+            "displayName": "Timestamp",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "title": "Booking Service - Request Tracking Table",
+      "description": "All booking service HTTP request & response log lines. Columns: Timestamp, Request-ID, Phone Number, Request (method + path), Response (status + body). Response column is blank on request rows.",
+      "type": "table",
+      "id": 4,
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{env=\"prod\"} |= \"[booking-service]\" |= \"HttpRequestResponseLoggingFilter\" |= \"$requestId\" |~ \"HTTP_REQUEST|HTTP_RESPONSE\" | pattern `<_>HTTP_<kind> transactionId=<transactionId> method=<method> path=<path> <rest>` | regexp `status=(?P<status>\\d+)` | regexp `\"(?:mobileNumber|phoneNumber|mobile)\"\\s*:\\s*\"(?P<phoneNumber>\\d+)\"` | regexp `body=(?P<body>\\{.*\\})\\s*$` | label_format request=`{{.method}} {{.path}}`,response=`{{if .status}}{{.status}} {{.body}}{{end}}`",
+          "queryType": "range",
+          "maxLines": 500
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "line": true,
+              "id": true,
+              "tsNs": true,
+              "env": true,
+              "filename": true,
+              "job": true,
+              "host": true,
+              "instance": true,
+              "labels": true,
+              "labelTypes": true,
+              "traceID": true,
+              "detected_level": true,
+              "service_name": true,
+              "severity": true,
+              "method": true,
+              "path": true,
+              "status": true,
+              "body": true,
+              "durationMs": true,
+              "logger": true,
+              "thread": true,
+              "level": true,
+              "msg": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "transactionId": 1,
+              "phoneNumber": 2,
+              "request": 3,
+              "response": 4
+            },
+            "renameByName": {
+              "Time": "Timestamp",
+              "transactionId": "Request-ID",
+              "phoneNumber": "Phone Number",
+              "request": "Request",
+              "response": "Response"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Response"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^2\\d{2} .*",
+                      "result": {
+                        "color": "green",
+                        "index": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^4\\d{2} .*",
+                      "result": {
+                        "color": "orange",
+                        "index": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^5\\d{2} .*",
+                      "result": {
+                        "color": "red",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request-ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 310
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Phone Number"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 280
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "count"
+          ],
+          "countRows": true
+        },
+        "sortBy": [
+          {
+            "displayName": "Timestamp",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "title": "Payment Service - Request Tracking Table",
+      "description": "All payment service HTTP request & response log lines. Columns: Timestamp, Request-ID, Phone Number, Request (method + path), Response (status + body). Response column is blank on request rows.",
+      "type": "table",
+      "id": 5,
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 46
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{env=\"prod\"} |= \"[payment-service]\" |= \"HttpRequestResponseLoggingFilter\" |= \"$requestId\" |~ \"HTTP_REQUEST|HTTP_RESPONSE\" | pattern `<_>HTTP_<kind> transactionId=<transactionId> method=<method> path=<path> <rest>` | regexp `status=(?P<status>\\d+)` | regexp `\"(?:mobileNumber|phoneNumber|mobile)\"\\s*:\\s*\"(?P<phoneNumber>\\d+)\"` | regexp `body=(?P<body>\\{.*\\})\\s*$` | label_format request=`{{.method}} {{.path}}`,response=`{{if .status}}{{.status}} {{.body}}{{end}}`",
+          "queryType": "range",
+          "maxLines": 500
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "line": true,
+              "id": true,
+              "tsNs": true,
+              "env": true,
+              "filename": true,
+              "job": true,
+              "host": true,
+              "instance": true,
+              "labels": true,
+              "labelTypes": true,
+              "traceID": true,
+              "detected_level": true,
+              "service_name": true,
+              "severity": true,
+              "method": true,
+              "path": true,
+              "status": true,
+              "body": true,
+              "durationMs": true,
+              "logger": true,
+              "thread": true,
+              "level": true,
+              "msg": true,
+              "kind": true,
+              "rest": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "transactionId": 1,
+              "phoneNumber": 2,
+              "request": 3,
+              "response": 4
+            },
+            "renameByName": {
+              "Time": "Timestamp",
+              "transactionId": "Request-ID",
+              "phoneNumber": "Phone Number",
+              "request": "Request",
+              "response": "Response"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Response"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^2\\d{2} .*",
+                      "result": {
+                        "color": "green",
+                        "index": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^4\\d{2} .*",
+                      "result": {
+                        "color": "orange",
+                        "index": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^5\\d{2} .*",
+                      "result": {
+                        "color": "red",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request-ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 310
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Phone Number"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 280
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "count"
+          ],
+          "countRows": true
+        },
+        "sortBy": [
+          {
+            "displayName": "Timestamp",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "title": "Membership Service - Request Tracking Table",
+      "description": "All membership service HTTP request & response log lines. Columns: Timestamp, Request-ID, Phone Number, Request (method + path), Response (status + body). Response column is blank on request rows.",
+      "type": "table",
+      "id": 6,
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{env=\"prod\"} |= \"[membership-service]\" |= \"HttpRequestResponseLoggingFilter\" |= \"$requestId\" |~ \"HTTP_REQUEST|HTTP_RESPONSE\" | pattern `<_>HTTP_<kind> transactionId=<transactionId> method=<method> path=<path> <rest>` | regexp `status=(?P<status>\\d+)` | regexp `\"(?:mobileNumber|phoneNumber|mobile)\"\\s*:\\s*\"(?P<phoneNumber>\\d+)\"` | regexp `body=(?P<body>\\{.*\\})\\s*$` | label_format request=`{{.method}} {{.path}}`,response=`{{if .status}}{{.status}} {{.body}}{{end}}`",
+          "queryType": "range",
+          "maxLines": 500
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "line": true,
+              "id": true,
+              "tsNs": true,
+              "env": true,
+              "filename": true,
+              "job": true,
+              "host": true,
+              "instance": true,
+              "labels": true,
+              "labelTypes": true,
+              "traceID": true,
+              "detected_level": true,
+              "service_name": true,
+              "severity": true,
+              "method": true,
+              "path": true,
+              "status": true,
+              "body": true,
+              "durationMs": true,
+              "logger": true,
+              "thread": true,
+              "level": true,
+              "msg": true,
+              "kind": true,
+              "rest": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "transactionId": 1,
+              "phoneNumber": 2,
+              "request": 3,
+              "response": 4
+            },
+            "renameByName": {
+              "Time": "Timestamp",
+              "transactionId": "Request-ID",
+              "phoneNumber": "Phone Number",
+              "request": "Request",
+              "response": "Response"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Response"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^2\\d{2} .*",
+                      "result": {
+                        "color": "green",
+                        "index": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^4\\d{2} .*",
+                      "result": {
+                        "color": "orange",
+                        "index": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^5\\d{2} .*",
+                      "result": {
+                        "color": "red",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request-ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 310
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Phone Number"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 280
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "count"
+          ],
+          "countRows": true
+        },
+        "sortBy": [
+          {
+            "displayName": "Timestamp",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "title": "Rates Service - Request Tracking Table",
+      "description": "All carwash rates service HTTP request & response log lines. Columns: Timestamp, Request-ID, Phone Number, Request (method + path), Response (status + body). Response column is blank on request rows.",
+      "type": "table",
+      "id": 7,
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 66
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{env=\"prod\"} |~ \"\\\\[(?:rates-service|carwash-rates|carwashrates)\\\\]\" |= \"HttpRequestResponseLoggingFilter\" |= \"$requestId\" |~ \"HTTP_REQUEST|HTTP_RESPONSE\" | pattern `<_>HTTP_<kind> transactionId=<transactionId> method=<method> path=<path> <rest>` | regexp `status=(?P<status>\\d+)` | regexp `\"(?:mobileNumber|phoneNumber|mobile)\"\\s*:\\s*\"(?P<phoneNumber>\\d+)\"` | regexp `body=(?P<body>\\{.*\\})\\s*$` | label_format request=`{{.method}} {{.path}}`,response=`{{if .status}}{{.status}} {{.body}}{{end}}`",
+          "queryType": "range",
+          "maxLines": 500
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels",
+            "replace": false,
+            "keepTime": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "line": true,
+              "id": true,
+              "tsNs": true,
+              "env": true,
+              "filename": true,
+              "job": true,
+              "host": true,
+              "instance": true,
+              "labels": true,
+              "labelTypes": true,
+              "traceID": true,
+              "detected_level": true,
+              "service_name": true,
+              "severity": true,
+              "method": true,
+              "path": true,
+              "status": true,
+              "body": true,
+              "durationMs": true,
+              "logger": true,
+              "thread": true,
+              "level": true,
+              "msg": true,
+              "kind": true,
+              "rest": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "transactionId": 1,
+              "phoneNumber": 2,
+              "request": 3,
+              "response": 4
+            },
+            "renameByName": {
+              "Time": "Timestamp",
+              "transactionId": "Request-ID",
+              "phoneNumber": "Phone Number",
+              "request": "Request",
+              "response": "Response"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Response"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^2\\d{2} .*",
+                      "result": {
+                        "color": "green",
+                        "index": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^4\\d{2} .*",
+                      "result": {
+                        "color": "orange",
+                        "index": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": "^5\\d{2} .*",
+                      "result": {
+                        "color": "red",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request-ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 310
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Phone Number"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 280
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "count"
+          ],
+          "countRows": true
+        },
+        "sortBy": [
+          {
+            "displayName": "Timestamp",
+            "desc": true
+          }
+        ]
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "prod",
+    "carwash",
+    "tracking"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "requestId",
+        "type": "textbox",
+        "label": "Request-ID filter",
+        "description": "Click a Request-ID in the Auth panel (or clear this box) to filter other service tables. Leave empty to show all.",
+        "query": "",
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "hide": 0,
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "Asia/Kolkata",
+  "title": "Prod - Service Tracking Dashboard",
+  "uid": "",
+  "version": 0,
+  "weekStart": ""
+}

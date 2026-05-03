@@ -115,3 +115,51 @@
   font-size: 13px;
   cursor: pointer;
 }
+
+/* ─── Small phones (≤480px) ─── */
+@media (max-width: 480px) {
+  .policy-title { font-size: 15px; }
+  .policy-brand { font-size: 11px; }
+  .policy-container { padding: 14px; margin: 12px 10px calc(80px + var(--safe-area-bottom)); border-radius: 12px; }
+  .policy-container h1 { font-size: 22px; }
+  .policy-container h2 { font-size: 17px; }
+  .policy-container h3 { font-size: 14px; }
+  .policy-container p,
+  .policy-container li,
+  .policy-container td,
+  .policy-container th { font-size: 13px; }
+  .policy-link-btn { font-size: 12px; padding: 8px 12px; }
+}
+
+/* ─── Tablet (≥768px) ─── */
+@media (min-width: 768px) {
+  .policy-top { padding: calc(16px + var(--safe-area-top)) calc(20px + var(--safe-area-right)) 16px calc(20px + var(--safe-area-left)); gap: 14px; }
+  .policy-back { width: 36px; height: 36px; font-size: 18px; }
+  .policy-title { font-size: 20px; }
+  .policy-brand { font-size: 13px; }
+  .policy-container { max-width: 800px; padding: 28px; margin: 28px auto calc(100px + var(--safe-area-bottom)); }
+  .policy-container h1 { font-size: 32px; }
+  .policy-container h2 { font-size: 22px; margin-top: 28px; }
+  .policy-container h3 { font-size: 18px; margin-top: 18px; }
+  .policy-container p,
+  .policy-container li,
+  .policy-container td,
+  .policy-container th { font-size: 15px; line-height: 1.7; }
+  .policy-link-btn { font-size: 14px; padding: 12px 18px; }
+  .policy-actions { gap: 14px; }
+}
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .policy-container { max-width: 860px; padding: 36px; }
+  .policy-container h1 { font-size: 36px; }
+  .policy-container h2 { font-size: 24px; }
+  .policy-container h3 { font-size: 20px; }
+  .policy-container p,
+  .policy-container li,
+  .policy-container td,
+  .policy-container th { font-size: 16px; line-height: 1.8; }
+  .policy-link-btn { font-size: 15px; padding: 12px 20px; }
+  .policy-table th,
+  .policy-table td { padding: 12px; }
+}

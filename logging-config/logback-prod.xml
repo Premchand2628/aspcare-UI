@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PRODUCTION Logback Configuration
+  =================================
+  Place this in each microservice's src/main/resources/ as logback-spring.xml
+  OR use -Dlogging.config=/etc/carwash/logback-prod.xml when starting services
+
+  Log levels: WARN + ERROR only (important information)
+  Log files:  /var/log/carwash/prod/{service-name}_prod.log
+-->
+<configuration>
+
+    <!-- Service name injected via Spring property spring.application.name -->
+    <springProperty scope="context" name="SERVICE_NAME" source="spring.application.name" defaultValue="unknown-service"/>
+
+    <property name="LOG_DIR" value="/var/log/carwash/prod"/>
+
+    <!--
+      LOG_PATTERN with inline secret masking.
+      Wraps %msg in three nested %replace() calls:
+        1) Redact JWT / Bearer tokens:            Bearer eyJ...     -> Bearer ***
+        2) Redact sensitive JSON field values:    "otp":"123456"    -> "otp":"***"
+        3) Redact form/kv style assignments:      otp=123456        -> otp=***
+      Fields covered: otp, password, newPassword, oldPassword, mobileNumber,
+      phoneNumber, phone, mobile, authToken, refreshToken, accessToken, token,
+      jwt, authorization, otpCode.
+      NOTE: Inline body logging should still be minimised in HttpRequestResponseLoggingFilter;
+      this is defence-in-depth only.
+    -->
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [PROD] %-5level [%thread] [tx:%X{transactionId}] [${SERVICE_NAME}] %logger{36} - %replace(%replace(%replace(%msg){'(?i)(Bearer\s+)[A-Za-z0-9._-]+','$1***'}){'(?i)&quot;(otp|password|newPassword|oldPassword|mobileNumber|phoneNumber|phone|mobile|authToken|refreshToken|accessToken|token|jwt|authorization|otpCode)&quot;\s*:\s*&quot;[^&quot;]*&quot;','&quot;$1&quot;:&quot;***&quot;'}){'(?i)(otp|password|newPassword|oldPassword|mobileNumber|phoneNumber)=[^\s&amp;,\}\]]+','$1=***'}%n"/>
+
+    <!-- Console output (for systemd journal / docker logs) -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Per-service rolling log file -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${SERVICE_NAME}_prod.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/${SERVICE_NAME}_prod.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ==================== LOG LEVELS ==================== -->
+    <!-- PRODUCTION: Only WARN and ERROR — important info only -->
+
+    <!-- Silence noisy frameworks -->
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="io.netty" level="WARN"/>
+    <logger name="reactor" level="WARN"/>
+
+    <!-- Your application: INFO level in prod to capture login, booking, payment activity -->
+    <logger name="com.aspcarcare" level="INFO"/>
+
+    <!-- Silence redundant RequestTracingFilter (HttpRequestResponseLoggingFilter already logs details) -->
+    <logger name="com.carwash.bookingservice.config.RequestTracingFilter" level="WARN"/>
+    <logger name="com.carwash.otplogin.config.RequestTracingFilter" level="WARN"/>
+    <logger name="com.carwash.carwashrates.config.RequestTracingFilter" level="WARN"/>
+    <logger name="com.carwash.paymentservice.config.RequestTracingFilter" level="WARN"/>
+    <logger name="com.carwash.membership.config.RequestTracingFilter" level="WARN"/>
+
+    <!-- Silence duplicate module-level logging filter (carwash-common cross-service filter already covers it) -->
+    <logger name="com.carwash.mailnotification.logging.HttpRequestResponseLoggingFilter" level="WARN"/>
+    <logger name="com.carwash.bookingservice.logging" level="WARN"/>
+
+    <!-- Silence Hibernate SQL in prod (shown as stdout, not via logger) -->
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.hibernate.type.descriptor.sql" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+</configuration>
