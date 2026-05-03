@@ -1,0 +1,143 @@
+# Promtail Configuration for Grafana Cloud
+# ==========================================
+# Place this at /etc/promtail/config.yml on your EC2
+# Promtail ships logs from local files to Grafana Cloud Loki
+#
+# Replace <GRAFANA_CLOUD_USER_ID> and <GRAFANA_CLOUD_API_KEY> with your values
+# from: https://grafana.com → My Account → Loki → Details
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: https://logs-prod-028.grafana.net/loki/api/v1/push
+    basic_auth:
+      username: 1559808
+      password: <YOUR_API_TOKEN>
+
+scrape_configs:
+
+  # ========================
+  #   PROD Backend Logs
+  # ========================
+  - job_name: prod-backend
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          env: prod
+          __path__: /var/log/carwash/prod/*_prod.log
+    pipeline_stages:
+      - regex:
+          expression: '^\S+ \S+ \[PROD\] (?P<level>\S+)\s+\[(?P<thread>[^\]]+)\] \[tx:(?P<transaction_id>[^\]]*)\] \[(?P<service>[^\]]+)\]'
+      - labels:
+          level:
+          service:
+          transaction_id:
+
+  # ========================
+  #   QA Backend Logs
+  # ========================
+  - job_name: qa-backend
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          env: qa
+          __path__: /var/log/carwash/qa/*_qa.log
+    pipeline_stages:
+      - regex:
+          expression: '^\S+ \S+ \[QA\] (?P<level>\S+)\s+\[(?P<thread>[^\]]+)\] \[tx:(?P<transaction_id>[^\]]*)\] \[(?P<service>[^\]]+)\]'
+      - labels:
+          level:
+          service:
+          transaction_id:
+
+  # ========================
+  #   PROD Nginx Logs
+  # ========================
+  - job_name: prod-nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          env: prod
+          service: nginx
+          __path__: /var/log/carwash/prod/nginx-*.log
+    pipeline_stages:
+      # Drop static-asset, favicon, health-probe, and scanner-probe noise
+      - match:
+          selector: '{service="nginx"}'
+          stages:
+            - drop:
+                expression: '"(?:GET|HEAD) [^"]*\.(?:png|jpe?g|gif|svg|webp|ico|css|js|map|woff2?|ttf|eot|otf|txt|mp4|webm)(?:\?[^"]*)? HTTP'
+                drop_counter_reason: static_asset
+            - drop:
+                expression: '"(?:GET|HEAD) /(?:favicon\.ico|robots\.txt|sitemap\.xml|apple-touch-icon[^"]*) HTTP'
+                drop_counter_reason: favicon_robots
+            - drop:
+                expression: '"(?:GET|HEAD|POST) [^"]*\.(?:zip|tar|tar\.gz|tgz|rar|7z|bak|sql|dump|backup|old|swp|log)(?:\?[^"]*)? HTTP'
+                drop_counter_reason: archive_scan
+            - drop:
+                expression: '"(?:GET|POST) [^"]*(?:wp-admin|wp-login|wordpress|\.env|\.git|\.svn|\.htaccess|phpmyadmin|pma|adminer|xmlrpc|\.aws|\.ssh|id_rsa|config\.php|web\.config|composer\.(?:json|lock)|package\.json|\.DS_Store)[^"]* HTTP'
+                drop_counter_reason: scanner_probe
+
+  # ========================
+  #   QA Nginx Logs
+  # ========================
+  - job_name: qa-nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          env: qa
+          service: nginx
+          __path__: /var/log/carwash/qa/nginx-*.log
+    pipeline_stages:
+      - match:
+          selector: '{service="nginx"}'
+          stages:
+            - drop:
+                expression: '"(?:GET|HEAD) [^"]*\.(?:png|jpe?g|gif|svg|webp|ico|css|js|map|woff2?|ttf|eot|otf|txt|mp4|webm)(?:\?[^"]*)? HTTP'
+                drop_counter_reason: static_asset
+            - drop:
+                expression: '"(?:GET|HEAD) /(?:favicon\.ico|robots\.txt|sitemap\.xml|apple-touch-icon[^"]*) HTTP'
+                drop_counter_reason: favicon_robots
+            - drop:
+                expression: '"(?:GET|HEAD|POST) [^"]*\.(?:zip|tar|tar\.gz|tgz|rar|7z|bak|sql|dump|backup|old|swp|log)(?:\?[^"]*)? HTTP'
+                drop_counter_reason: archive_scan
+            - drop:
+                expression: '"(?:GET|POST) [^"]*(?:wp-admin|wp-login|wordpress|\.env|\.git|\.svn|\.htaccess|phpmyadmin|pma|adminer|xmlrpc|\.aws|\.ssh|id_rsa|config\.php|web\.config|composer\.(?:json|lock)|package\.json|\.DS_Store)[^"]* HTTP'
+                drop_counter_reason: scanner_probe
+
+  # ========================
+  #   Staging Nginx Logs
+  # ========================
+  - job_name: stg-nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          env: stg
+          service: nginx
+          __path__: /var/log/carwash/stg/nginx-*.log
+    pipeline_stages:
+      - match:
+          selector: '{service="nginx"}'
+          stages:
+            - drop:
+                expression: '"(?:GET|HEAD) [^"]*\.(?:png|jpe?g|gif|svg|webp|ico|css|js|map|woff2?|ttf|eot|otf|txt|mp4|webm)(?:\?[^"]*)? HTTP'
+                drop_counter_reason: static_asset
+            - drop:
+                expression: '"(?:GET|HEAD) /(?:favicon\.ico|robots\.txt|sitemap\.xml|apple-touch-icon[^"]*) HTTP'
+                drop_counter_reason: favicon_robots
+            - drop:
+                expression: '"(?:GET|HEAD|POST) [^"]*\.(?:zip|tar|tar\.gz|tgz|rar|7z|bak|sql|dump|backup|old|swp|log)(?:\?[^"]*)? HTTP'
+                drop_counter_reason: archive_scan
+            - drop:
+                expression: '"(?:GET|POST) [^"]*(?:wp-admin|wp-login|wordpress|\.env|\.git|\.svn|\.htaccess|phpmyadmin|pma|adminer|xmlrpc|\.aws|\.ssh|id_rsa|config\.php|web\.config|composer\.(?:json|lock)|package\.json|\.DS_Store)[^"]* HTTP'
+                drop_counter_reason: scanner_probe

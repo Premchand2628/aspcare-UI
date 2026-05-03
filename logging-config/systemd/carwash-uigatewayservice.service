@@ -1,0 +1,38 @@
+[Unit]
+Description=Car Wash — UI Gateway Service (Spring Cloud Gateway, port 10080)
+Documentation=https://aspcarcare.com
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/carwash
+
+ExecStart=/usr/bin/java -jar /opt/carwash/jars/uigatewayservice.jar \
+  --spring.profiles.active=prod \
+  --logging.config=/etc/carwash/logback-prod.xml \
+  --spring.config.additional-location=file:/opt/carwash/config/env.properties
+
+# Send stdout/stderr to journald (logback already writes structured logs to /var/log/carwash/prod/*.log)
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=carwash-uigatewayservice
+
+# Restart policy — survive crashes
+Restart=always
+RestartSec=10s
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+# Graceful shutdown (Spring Boot actuator shutdown takes a few seconds)
+TimeoutStopSec=30s
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Resource limits (tune as needed)
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

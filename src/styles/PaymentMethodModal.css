@@ -309,6 +309,42 @@
   font-weight: 600;
 }
 
+/* ─── Small phones (≤480px) ─── */
+@media (max-width: 480px) {
+  .payment-modal { padding: 16px 14px 22px; }
+  .payment-modal-header h3 { font-size: 15px; }
+  .payment-modal-amount { font-size: 14px; }
+  .payment-modal-amount strong { font-size: 18px; }
+  .payment-method-label { font-size: 14px; }
+  .payment-proceed-btn { font-size: 15px; padding: 14px; }
+  .payment-new-methods-btn { font-size: 14px; padding: 12px; }
+}
+
+/* ─── Tablet / Desktop (≥768px) ─── */
+@media (min-width: 768px) {
+  .payment-modal-overlay { align-items: center; }
+  .payment-modal { border-radius: 20px; max-width: 520px; padding: 24px 22px 32px; }
+  .payment-modal-header h3 { font-size: 19px; }
+  .payment-modal-amount { font-size: 17px; }
+  .payment-modal-amount strong { font-size: 24px; }
+  .payment-method-option { padding: 16px; border-radius: 14px; }
+  .payment-method-icon { width: 44px; height: 44px; font-size: 22px; }
+  .payment-method-label { font-size: 16px; }
+  .payment-proceed-btn { font-size: 17px; padding: 16px; border-radius: 16px; }
+  .payment-new-methods-btn { font-size: 16px; padding: 15px; border-radius: 16px; }
+  .pm-inline-group input { font-size: 15px; padding: 12px 14px; }
+  .pm-inline-group label { font-size: 12px; }
+}
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .payment-modal { max-width: 560px; padding: 28px 26px 36px; }
+  .payment-modal-header h3 { font-size: 20px; }
+  .payment-modal-amount strong { font-size: 26px; }
+  .payment-method-label { font-size: 17px; }
+  .payment-proceed-btn { font-size: 18px; }
+}
+
 .pm-inline-save {
   width: 100%;
   margin-top: 10px;

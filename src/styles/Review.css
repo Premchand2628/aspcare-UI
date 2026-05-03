@@ -1065,3 +1065,18 @@
   cursor: pointer;
   padding: 6px 12px;
 }
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .review-header h1 { font-size: 26px; }
+  .service-name { font-size: 22px; }
+  .service-location { font-size: 16px; }
+  .booking-info { padding: 28px; border-radius: 18px; }
+  .booking-row { font-size: 16px; }
+  .price-row { font-size: 16px; }
+  .price-row.total { font-size: 18px; }
+  .continue-btn { padding: 22px; font-size: 18px; max-width: 500px; margin-left: auto; margin-right: auto; display: block; }
+  .promo-code-input { font-size: 15px; }
+  .apply-btn-small, .remove-btn-small { padding: 12px 28px; font-size: 15px; }
+  .service-image { border-radius: 18px; }
+}
