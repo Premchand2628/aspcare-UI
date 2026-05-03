@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  QA Logback Configuration
+  =========================
+  Place this in each microservice's src/main/resources/ as logback-spring.xml
+  OR use -Dlogging.config=/etc/carwash/logback-qa.xml when starting services
+
+  Log levels: INFO (more verbose than prod for debugging)
+  Log files:  /var/log/carwash/qa/{service-name}_qa.log
+-->
+<configuration>
+
+    <!-- Service name injected via Spring property spring.application.name -->
+    <springProperty scope="context" name="SERVICE_NAME" source="spring.application.name" defaultValue="unknown-service"/>
+
+    <property name="LOG_DIR" value="/var/log/carwash/qa"/>
+
+    <!-- Inline secret masking. See logback-prod.xml for regex details. -->
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [QA] %-5level [%thread] [tx:%X{transactionId}] [${SERVICE_NAME}] %logger{36} - %replace(%replace(%replace(%msg){'(?i)(Bearer\s+)[A-Za-z0-9._-]+','$1***'}){'(?i)&quot;(otp|password|newPassword|oldPassword|mobileNumber|phoneNumber|phone|mobile|authToken|refreshToken|accessToken|token|jwt|authorization|otpCode)&quot;\s*:\s*&quot;[^&quot;]*&quot;','&quot;$1&quot;:&quot;***&quot;'}){'(?i)(otp|password|newPassword|oldPassword|mobileNumber|phoneNumber)=[^\s&amp;,\}\]]+','$1=***'}%n"/>
+
+    <!-- Console output -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Per-service rolling log file -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${SERVICE_NAME}_qa.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/${SERVICE_NAME}_qa.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>14</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ==================== LOG LEVELS ==================== -->
+    <!-- QA: INFO level — more details for testing/debugging -->
+
+    <!-- Frameworks at WARN (still no noise) -->
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="io.netty" level="WARN"/>
+    <logger name="reactor" level="WARN"/>
+
+    <!-- Your application: INFO level in QA -->
+    <logger name="com.aspcarcare" level="INFO"/>
+
+    <!-- Enable DEBUG for specific services when needed (uncomment) -->
+    <!-- <logger name="com.aspcarcare.bookingservice" level="DEBUG"/> -->
+    <!-- <logger name="com.aspcarcare.paymentservice" level="DEBUG"/> -->
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+</configuration>

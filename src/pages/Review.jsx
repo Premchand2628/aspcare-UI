@@ -163,7 +163,7 @@ const Review = () => {
       });
       const data = await res.json();
       setPhoneIsNew(!data.exists);
-      setPhoneExistingEmail(data.email || '');
+      setPhoneExistingEmail('');
       setPhoneStep('confirm');
     } catch {
       setPhoneError('Unable to verify phone. Please try again.');
@@ -319,7 +319,7 @@ const Review = () => {
         if (!Array.isArray(deals) || deals.length === 0) {
           const res = await fetch('/deal-prices', {
             method: 'GET',
-            headers: { Accept: 'application/json' },
+            headers: withAuthHeader({ Accept: 'application/json' }),
           });
           if (!res.ok) return;
           const data = await res.json();
@@ -840,7 +840,7 @@ const Review = () => {
                 <p className="phone-link-desc">
                   {phoneIsNew
                     ? 'Get a signup bonus of ₹20 off on your first booking!'
-                    : `${phoneInput} is already registered with ${phoneExistingEmail}. Do you wish to continue?`
+                    : `${phoneInput} is already registered. Do you wish to continue?`
                   }
                 </p>
                 {otpError && <p className="phone-link-error">{otpError}</p>}

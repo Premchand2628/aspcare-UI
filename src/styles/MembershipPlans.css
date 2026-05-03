@@ -415,3 +415,20 @@
     padding: 10px 20px 0;
   }
 }
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .plan-title-section { padding: 36px 24px; }
+  .plan-main-title { font-size: 32px; }
+  .plan-subtitle { font-size: 16px; }
+  .plans-container { gap: 24px; padding: 0 24px; }
+  .plan-card { min-width: 300px; }
+  .plan-name { font-size: 24px; }
+  .price-amount { font-size: 40px; }
+  .price-period { font-size: 15px; }
+  .feature-item { font-size: 15px; }
+  .buy-now-btn { padding: 16px; font-size: 17px; }
+  .book-now-btn { padding: 16px; font-size: 17px; }
+  .plan-description { font-size: 14px; }
+  .water-checkbox-label { font-size: 15px; }
+}

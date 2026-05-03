@@ -94,6 +94,15 @@ const formatDistance = (distanceKm) => {
   return `${distanceKm.toFixed(1)} km`;
 };
 
+const formatBasePrice = (centre) => {
+  const raw = centre?.basePrice ?? centre?.base_price;
+  if (raw === null || raw === undefined || raw === '') return '';
+  const num = Number(raw);
+  if (!Number.isFinite(num)) return '';
+  // Display whole numbers without decimals, otherwise keep 2 decimals.
+  return Number.isInteger(num) ? `$${num}` : `$${num.toFixed(2)}`;
+};
+
 const getCentreMapsUrl = (centre) => {
   const raw = String(centre?.maps_url || centre?.mapsUrl || centre?.mapsURL || '').trim();
   if (!raw) return null;
@@ -458,10 +467,6 @@ const SelectCenter = () => {
           <p className="center-filter-note">Check slot availability on preferred date &amp; location</p>
         </div>
 
-        <div className="service-centre-banner">
-          <img src="/images/servicecentre.png" alt="Service Centre" />
-        </div>
-
         {(loadingCentres || selectedArea) && (
           <div className="centers-overlay-layer" ref={centresListRef}>
             {loadingCentres ? (
@@ -471,45 +476,75 @@ const SelectCenter = () => {
             ) : (
               <div className="centers-list centers-list-overlay">
                 {centres.length > 0 ? (
-                  centres.map(centre => (
-                    <div 
-                      key={getCentreKey(centre)} 
-                      className="center-item"
-                      onClick={() => handleSelectCentre(centre)}
-                    >
-                      <div className="center-availability-badge">
-                        <p className="center-availability-title">Availability:</p>
-                        <p className="center-availability-slots">
-                          {(() => {
-                            const slotCount = centreSlotCounts[getCentreKey(centre)];
-                            if (loadingSlotCounts && (slotCount === undefined || slotCount === null)) {
-                              return 'Checking...';
-                            }
-                            if (slotCount === null || slotCount === undefined) {
-                              return '-- slots';
-                            }
-                            return `${slotCount} slots`;
-                          })()}
-                        </p>
-                        <p className="center-availability-date">{formatDateDisplay(selectedDate)}</p>
-                      </div>
+                  (() => {
+                    // Find the lowest base price across the visible centres so we can tag it.
+                    const numericPrices = centres
+                      .map(c => Number(c?.basePrice ?? c?.base_price))
+                      .filter(n => Number.isFinite(n) && n > 0);
+                    const minPrice = numericPrices.length ? Math.min(...numericPrices) : null;
+                    const lowestCount = minPrice !== null
+                      ? numericPrices.filter(n => n === minPrice).length
+                      : 0;
 
-                      <div className="center-main-row">
-                        <div className="center-icon">🏢</div>
-                        <div className="center-info">
-                          <div className="center-title-row">
-                            <h3>{centre.name}</h3>
-                            {centre.rating && (
-                              <p className="center-rating">⭐ {centre.rating}</p>
-                            )}
+                    return centres.map(centre => {
+                      const slotCount = centreSlotCounts[getCentreKey(centre)];
+                      let slotText;
+                      if (loadingSlotCounts && (slotCount === undefined || slotCount === null)) {
+                        slotText = 'Checking…';
+                      } else if (slotCount === null || slotCount === undefined) {
+                        slotText = '-- slots';
+                      } else {
+                        slotText = `${slotCount} slots`;
+                      }
+                      const priceText = formatBasePrice(centre);
+                      const priceNum = Number(centre?.basePrice ?? centre?.base_price);
+                      // Only show the "Lowest" badge when there is a meaningful comparison
+                      // (more than one centre, exactly one minimum, and at least 2 priced centres).
+                      const isLowest = minPrice !== null
+                        && numericPrices.length >= 2
+                        && lowestCount === 1
+                        && Number.isFinite(priceNum)
+                        && priceNum === minPrice;
+
+                      return (
+                        <div
+                          key={getCentreKey(centre)}
+                          className={`center-item${isLowest ? ' is-lowest' : ''}`}
+                          onClick={() => handleSelectCentre(centre)}
+                        >
+                          {isLowest && (
+                            <span className="center-lowest-badge">★ Lowest price</span>
+                          )}
+                          <div className="center-card-header">
+                            <div className="center-heading">
+                              <h3 className="center-name">{centre.name}</h3>
+                              {centre.rating && (
+                                <span className="center-rating-chip">⭐ {centre.rating}</span>
+                              )}
+                            </div>
+                            <div className="center-availability-pill">
+                              <span className="center-availability-slots">{slotText}</span>
+                              <span className="center-availability-date">{formatDateDisplay(selectedDate)}</span>
+                            </div>
                           </div>
-                          {renderCentreLocation(centre)}
-                        </div>
-                      </div>
 
-                      <p className="center-address">{centre.address}</p>
-                    </div>
-                  ))
+                          {renderCentreLocation(centre)}
+
+                          <p className="center-address">{centre.address}</p>
+
+                          <div className="center-card-footer">
+                            {priceText ? (
+                              <div className="center-price-block">
+                                <span className="center-price-label">Starts at</span>
+                                <span className="center-price-chip">{priceText}</span>
+                              </div>
+                            ) : <span />}
+                            <span className="center-select-hint">Select →</span>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()
                 ) : (
                   <div className="no-centres-message no-centres-message-overlay">
                     No service centres found in {selectedArea}

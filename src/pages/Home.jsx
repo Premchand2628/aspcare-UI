@@ -115,7 +115,7 @@ const Home = () => {
       if (!data) {
         const response = await fetch('/deal-prices', {
           method: 'GET',
-          headers: { 'Accept': 'application/json' }
+          headers: withAuthHeader({ Accept: 'application/json' })
         });
 
         if (!response.ok) {

@@ -5,7 +5,8 @@ import '../styles/Login.css';
 
 function Login() {
   const OTP_RESEND_SECONDS = 30;
-  const isQaOtpRateLimitBypassEnabled = import.meta.env.DEV || import.meta.env.VITE_QA_SKIP_OTP_RATE_LIMIT === 'true';
+  // OTP rate-limit bypass was removed (security: leaked a QA short-circuit into the prod bundle).
+  // All rate limiting is now enforced server-side only.
   const navigate = useNavigate();
   const location = useLocation();
   const [authMode, setAuthMode] = useState(() => {
@@ -165,13 +166,6 @@ function Login() {
         setError('');
       } else {
         if (response.status === 429) {
-          if (authMode === 'signup' && isQaOtpRateLimitBypassEnabled) {
-            setOtpSent(true);
-            setOtp('');
-            setOtpCooldownSeconds(OTP_RESEND_SECONDS);
-            setError('');
-            return;
-          }
           setOtpCooldownSeconds(getRetryAfterSeconds(response, 600));
           setError(getRetryMessage(response, 10));
         } else {
@@ -329,6 +323,28 @@ function Login() {
 
   const handleGoogleError = () => {
     setError('Google login failed. Please try again.');
+  };
+
+  const handleAppleLogin = () => {
+    setError('Apple sign-in is coming soon.');
+  };
+
+  const handleIdentifierChange = (val) => {
+    setError('');
+    if (val === '') {
+      setMobileNumber('');
+      setEmail('');
+      return;
+    }
+    if (/\D/.test(val)) {
+      // Contains non-digit → treat as email
+      setEmail(val);
+      setMobileNumber('');
+    } else {
+      // All digits → treat as phone
+      setMobileNumber(val.slice(0, 10));
+      setEmail('');
+    }
   };
 
   const handleFacebookLogin = () => {
@@ -710,187 +726,192 @@ function Login() {
 
         {/* Login Form */}
         {authMode === 'login' && (
-          <>
-            {showLoginOptions && (
-              <div className="login-options-panel">
-                {/* Login Method Toggle */}
-                <div className={`login-method-toggle ${loginMethod === 'email' ? 'email-active' : 'phone-active'}`}>
-                  <span className="method-flow-bg" aria-hidden="true" />
-                  <button
-                    className={`method-btn ${loginMethod === 'phone' ? 'active' : ''}`}
-                    onClick={() => setLoginMethod('phone')}
-                  >
-                    Phone OTP
+          <div className="auth-compact">
+            {/* Phone OTP entry view (after OTP sent) */}
+            {mobileNumber && otpSent ? (
+              <>
+                <div className="compact-input-row">
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    className="compact-input"
+                    placeholder="Enter OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    maxLength={6}
+                    autoFocus
+                  />
+                  {hasValidOtp && (
+                    <button
+                      type="button"
+                      className="compact-arrow-btn"
+                      onClick={handleVerifyOTP}
+                      disabled={loading}
+                      aria-label="Verify OTP"
+                    >
+                      {loading ? '…' : '→'}
+                    </button>
+                  )}
+                </div>
+                <div className="compact-edit-row">
+                  <span className="compact-edit-phone">{mobileNumber}</span>
+                  <button type="button" className="compact-edit-btn" onClick={handleEditPhoneNumber}>
+                    Edit?
                   </button>
-                  <button
-                    className={`method-btn ${loginMethod === 'email' ? 'active' : ''}`}
-                    onClick={() => setLoginMethod('email')}
-                  >
-                    Email Login
-                  </button>
+                  {otpCooldownSeconds > 0 ? (
+                    <span className="compact-edit-timer">Resend in {formatCountdown(otpCooldownSeconds)}</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="compact-edit-btn"
+                      onClick={handleResendOtp}
+                      disabled={loading}
+                    >
+                      Resend
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Unified Email/Phone input */}
+                <div className="compact-input-row">
+                  <input
+                    type="text"
+                    inputMode={mobileNumber ? 'numeric' : 'text'}
+                    className="compact-input"
+                    placeholder="Email/Phone"
+                    value={mobileNumber || email}
+                    onChange={(e) => handleIdentifierChange(e.target.value)}
+                    autoComplete="username"
+                  />
+                  {mobileNumber && hasValidPhoneNumber && !otpSent && (
+                    <button
+                      type="button"
+                      className="compact-pill-btn"
+                      onClick={handleSendOTP}
+                      disabled={loading || otpCooldownSeconds > 0}
+                    >
+                      {loading ? '…' : 'OTP'}
+                    </button>
+                  )}
                 </div>
 
-                {/* Phone OTP Login */}
-                {loginMethod === 'phone' && (
-                  <div className="form-section">
-                    <div className={`phone-input-row ${(otpSent || hasValidPhoneNumber) ? 'has-otp-ready' : ''}`}>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        className="form-input"
-                        placeholder={otpSent ? 'Enter 6-digit OTP' : 'Enter registered mobile number'}
-                        value={otpSent ? otp : mobileNumber}
-                        onChange={(e) => { const digits = e.target.value.replace(/\D/g, ''); otpSent ? setOtp(digits) : setMobileNumber(digits); }}
-                        maxLength={otpSent ? 6 : 10}
-                      />
-
-                      {!otpSent && hasValidPhoneNumber && (
-                        <button 
-                          className="inline-otp-btn" 
-                          onClick={handleSendOTP}
-                          disabled={loading}
-                        >
-                          {loading ? (
-                            <span className="btn-loading-content"><span className="btn-loading-car" aria-hidden="true">🚗</span> Sending...</span>
-                          ) : 'Send OTP'}
-                        </button>
-                      )}
-
-                      {otpSent && (
-                        <button 
-                          className="inline-verify-btn" 
-                          onClick={handleVerifyOTP}
-                          disabled={loading || !hasValidOtp}
-                        >
-                          {loading ? (
-                            <span className="btn-loading-content"><span className="btn-loading-car" aria-hidden="true">🚗</span> Verifying...</span>
-                          ) : 'Verify OTP'}
-                        </button>
-                      )}
-                    </div>
-
-                    {otpSent && (
-                      <div className="otp-meta-row">
-                        <span className="otp-meta-phone">
-                          {mobileNumber}{' '}
-                          <button type="button" className="otp-edit-btn" onClick={handleEditPhoneNumber}>edit?</button>
-                        </span>
-                        {otpCooldownSeconds > 0 ? (
-                          <span className="otp-meta-timer">Resend in {formatCountdown(otpCooldownSeconds)}</span>
-                        ) : (
-                          <button type="button" className="otp-resend-btn" onClick={handleResendOtp} disabled={loading}>
-                            Resend OTP
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {error && <p className="error-message">{error}</p>}
-                  </div>
-                )}
-
-                {/* Email Login */}
-                {loginMethod === 'email' && (
-                  <div className="form-section email-login-form">
+                {/* Password input (email mode) */}
+                {email && (
+                  <div className="compact-input-row">
                     <input
-                      type="email"
-                      className="form-input"
-                      placeholder="name@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      type={showPassword ? 'text' : 'password'}
+                      className="compact-input"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && hasEmailAndPassword && !loading) {
+                          handleLogin();
+                        }
+                      }}
+                      autoComplete="current-password"
                     />
-
-                    <div className="password-input-wrapper">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        className="form-input"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                      />
-                      <button
-                        className="show-password-btn"
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        <span className={`eye-icon ${showPassword ? 'eye-open' : 'eye-closed'}`} aria-hidden="true" />
-                      </button>
-                    </div>
-
-                    {error && <p className="error-message">{error}</p>}
-
                     {hasEmailAndPassword && (
-                      <button className="primary-btn" onClick={handleLogin} disabled={loading}>
-                        {loading ? (
-                          <span className="btn-loading-content"><span className="btn-loading-car" aria-hidden="true">🚗</span> Logging in...</span>
-                        ) : 'Login'}
+                      <button
+                        type="button"
+                        className="compact-arrow-btn"
+                        onClick={handleLogin}
+                        disabled={loading}
+                        aria-label="Login"
+                      >
+                        {loading ? '…' : '→'}
                       </button>
                     )}
-
-                    <div className="bottom-link login-footer-links">
-                      <a href="#" className="forgot-password-link-inline" onClick={openForgotPasswordPopup}>Forgot password?</a>
-                    </div>
                   </div>
                 )}
-              </div>
+              </>
             )}
 
-            {/* Google Login Button */}
-            <div className={`google-login-section ${showLoginOptions ? 'with-options' : 'initial-actions'}`}>
-              {showActionDivider && (
-                <div className="divider">
-                  <span>OR</span>
-                </div>
-              )}
-              <div className="google-signup-row">
-                <div className="google-signin-wrap">
-                  <div className="social-signin-row">
-                    <div className="google-btn-slot">
-                      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-                        <GoogleLogin
-                          onSuccess={handleGoogleSuccess}
-                          onError={handleGoogleError}
-                          theme="outlined"
-                          size="large"
-                          width="100%"
-                          text="signin"
-                        />
-                      </GoogleOAuthProvider>
-                    </div>
-                    <button type="button" className="facebook-signin-btn" onClick={handleFacebookLogin} disabled={loading} aria-label="Facebook">
-                      <svg className="facebook-logo" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                        <path fill="#fff" d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.025 4.388 11.022 10.125 11.927v-8.437H7.078v-3.49h3.047V9.414c0-3.025 1.792-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.93-1.956 1.886v2.263h3.328l-.532 3.49h-2.796v8.437C19.612 23.095 24 18.098 24 12.073"/>
-                      </svg>
-                      <span>Facebook</span>
-                    </button>
-                  </div>
-                </div>
-                <div className="auth-quick-actions">
-                  <button
-                    type="button"
-                    className="login-side-btn"
-                    onClick={() => {
-                      setShowLoginOptions(true);
-                      setShowActionDivider(true);
-                    }}
-                  >
-                    Login
-                  </button>
-                  <button
-                    type="button"
-                    className="signup-side-btn"
-                    onClick={() => {
+            {/* Footer link row */}
+            <div className="compact-footer-link">
+              {email ? (
+                <>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setAuthMode('signup');
-                      setShowActionDivider(true);
                     }}
                   >
-                    Sign up
-                  </button>
-                </div>
-              </div>
+                    Signup?
+                  </a>
+                  <a href="#" onClick={openForgotPasswordPopup}>
+                    Forgot password?
+                  </a>
+                </>
+              ) : (
+                <span>
+                  New account?{' '}
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setAuthMode('signup');
+                    }}
+                  >
+                    Register
+                  </a>
+                </span>
+              )}
             </div>
-          </>
+
+            {error && <p className="error-message compact-error">{error}</p>}
+
+            {/* OR divider */}
+            <div className="compact-divider">
+              <span>or</span>
+            </div>
+
+            {/* Social icons row */}
+            <div className="compact-social-row">
+              <div className="compact-social-google-wrap" aria-label="Sign in with Google">
+                <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    type="icon"
+                    shape="circle"
+                    theme="outline"
+                    size="large"
+                  />
+                </GoogleOAuthProvider>
+              </div>
+              <button
+                type="button"
+                className="compact-social-icon compact-social-fb"
+                onClick={handleFacebookLogin}
+                disabled={loading}
+                aria-label="Sign in with Facebook"
+              >
+                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                  <path
+                    fill="#1877F2"
+                    d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.025 4.388 11.022 10.125 11.927v-8.437H7.078v-3.49h3.047V9.414c0-3.025 1.792-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.93-1.956 1.886v2.263h3.328l-.532 3.49h-2.796v8.437C19.612 23.095 24 18.098 24 12.073"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="compact-social-icon compact-social-apple"
+                onClick={handleAppleLogin}
+                aria-label="Sign in with Apple"
+              >
+                <svg viewBox="0 0 384 512" width="20" height="24" aria-hidden="true">
+                  <path
+                    fill="#000"
+                    d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Signup Form */}

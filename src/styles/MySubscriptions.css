@@ -437,3 +437,21 @@
   .subscription-meta { font-size: 14px; }
   .status-pill { font-size: 12px; padding: 5px 10px; }
 }
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .subscriptions-header h1 { font-size: 26px; }
+  .subscriptions-list { gap: 18px; }
+  .subscription-card { padding: 22px; }
+  .subscription-title { font-size: 22px; }
+  .subscription-description { font-size: 15px; }
+  .subscription-tagline { font-size: 15px; padding: 7px 14px; }
+  .subscription-book-btn { padding: 10px 22px; font-size: 16px; }
+  .subscription-left-text { font-size: 22px; }
+  .left-count { font-size: 28px; }
+  .subscription-pricing span, .subscription-usage span { font-size: 13px; }
+  .subscription-pricing strong, .subscription-usage strong { font-size: 17px; }
+  .detail-row { font-size: 15px; }
+  .detail-label { min-width: 140px; }
+  .subscription-meta { font-size: 15px; }
+}

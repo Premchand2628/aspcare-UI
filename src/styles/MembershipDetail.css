@@ -310,3 +310,22 @@
     padding: 10px 0;
   }
 }
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .membership-status { padding: 36px 30px; }
+  .membership-status h2 { font-size: 20px; }
+  .membership-tier { font-size: 36px; }
+  .expiry-info { font-size: 16px; }
+  .benefits-section { padding: 30px; margin-bottom: 28px; }
+  .benefits-section h3 { font-size: 22px; }
+  .benefits-list li { font-size: 16px; line-height: 1.7; }
+  .membership-actions { gap: 16px; }
+  .book-now-btn, .upgrade-btn { padding: 18px; font-size: 17px; border-radius: 16px; }
+  .payment-history { padding: 24px; }
+  .payment-history h3 { font-size: 20px; }
+  .payment-row { font-size: 16px; padding: 14px 0; }
+  .payment-date { font-size: 15px; }
+  .payment-plan { font-size: 14px; }
+  .payment-amount { font-size: 17px; }
+}

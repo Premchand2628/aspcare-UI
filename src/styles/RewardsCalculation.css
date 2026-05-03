@@ -549,3 +549,19 @@
   .redemption-card { padding: 16px; border-radius: 14px; }
   .messages-container { padding: 16px; gap: 14px; }
 }
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .rewards-header h1 { font-size: 30px; }
+  .total-drops-card { padding: 24px; }
+  .drops-icon { font-size: 48px; }
+  .drops-amount { font-size: 36px; }
+  .drops-label { font-size: 16px; }
+  .drops-item { padding: 16px 18px; }
+  .item-label { font-size: 16px; }
+  .item-value { font-size: 16px; }
+  .redemption-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .redemption-card { padding: 20px; }
+  .guide-item h3 { font-size: 18px; }
+  .guide-item p { font-size: 15px; }
+}

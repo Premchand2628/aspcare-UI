@@ -101,7 +101,9 @@ export const installFetchTransactionInterceptor = () => {
     } catch (error) {
       if (shouldLogRequests()) {
         const elapsedMs = Math.round(performance.now() - start);
-        console.error(`[api][tx:${transactionId}] ${method} ${url} -> FAILED (${elapsedMs}ms)`, error);
+        // Intentionally do NOT log the raw error (may contain request bodies, tokens, PII)
+        const safeName = (error && error.name) ? error.name : 'Error';
+        console.error(`[api][tx:${transactionId}] ${method} ${url} -> FAILED (${elapsedMs}ms) [${safeName}]`);
       }
       throw error;
     }

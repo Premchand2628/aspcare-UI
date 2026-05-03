@@ -482,3 +482,26 @@
   .referral-info-section h3 { font-size: 18px; }
   .step p { font-size: 15px; }
 }
+
+/* ─── Desktop (≥1024px) ─── */
+@media (min-width: 1024px) {
+  .referral-header h1 { font-size: 30px; }
+  .benefit-card { padding: 32px; }
+  .benefit-amount { font-size: 40px; }
+  .benefit-label { font-size: 16px; }
+  .invite-card { padding: 28px; }
+  .invite-content h3 { font-size: 20px; }
+  .invite-content p { font-size: 16px; }
+  .referral-count { padding: 22px 28px; }
+  .count-label { font-size: 17px; }
+  .count-number { font-size: 36px; }
+  .referral-card { padding: 20px; }
+  .referral-name { font-size: 17px; }
+  .referral-benefit { font-size: 20px; }
+  .empty-state h3 { font-size: 24px; }
+  .empty-state p { font-size: 16px; }
+  .invite-btn { padding: 18px 56px; font-size: 17px; }
+  .referral-info-section { padding: 28px; }
+  .referral-info-section h3 { font-size: 20px; }
+  .step p { font-size: 16px; }
+}
