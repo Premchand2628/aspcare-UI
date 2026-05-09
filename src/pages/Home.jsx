@@ -5,6 +5,7 @@ import { writeBookingsCache, writeActiveMembershipCache } from '../utils/booking
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import { readDealPricesCache, writeDealPricesCache } from '../utils/dealPricesCache';
 import '../styles/Home.css';
+import { HomePageSkeleton, useMountSkeleton, LoadingAnnouncer } from '../components/Skeleton';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -429,6 +430,16 @@ const Home = () => {
   };
 
   const isLoggedIn = Boolean(getValidatedAuthToken());
+  const showMountSkeleton = useMountSkeleton(180);
+
+  if (showMountSkeleton) {
+    return (
+      <div className="page-container home-page">
+        <LoadingAnnouncer label="Loading home" />
+        <HomePageSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="page-container home-page">

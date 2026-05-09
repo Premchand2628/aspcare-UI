@@ -4,6 +4,7 @@ import BottomNav from '../components/BottomNav';
 import { withAuthHeader } from '../utils/auth';
 import { readCache, writeCache, CACHE_KEYS } from '../utils/refDataCache';
 import '../styles/SelectCenter.css';
+import { CentresListSkeleton, LoadingAnnouncer } from '../components/Skeleton';
 
 const normalizeServiceType = (value) => {
   const normalized = String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
@@ -471,7 +472,8 @@ const SelectCenter = () => {
           <div className="centers-overlay-layer" ref={centresListRef}>
             {loadingCentres ? (
               <div className="loading-message loading-message-overlay">
-                Loading service centres...
+                <LoadingAnnouncer label="Loading service centres" />
+                <CentresListSkeleton count={3} />
               </div>
             ) : (
               <div className="centers-list centers-list-overlay">
