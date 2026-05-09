@@ -6,6 +6,7 @@ import { getStoredPhone, toApiServiceType, toApiWaterProvidedFlag, toUiServiceTy
 import { clearAuthSession, getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import { readDealPricesCache, writeDealPricesCache } from '../utils/dealPricesCache';
 import { clearSubscriptionsCache } from '../utils/subscriptionsCache';
+import { OffersListSkeleton, useDelayedFlag, LoadingAnnouncer } from '../components/Skeleton';
 import '../styles/Offers.css';
 
 const Offers = () => {
@@ -24,6 +25,7 @@ const Offers = () => {
     return preselectedCarType;
   });
   const [loading, setLoading] = useState(true);
+  const showLoadingSkeleton = useDelayedFlag(loading, 150);
   const [error, setError] = useState('');
   const [selectedDealForPay, setSelectedDealForPay] = useState(null);
   const [showWaterPopup, setShowWaterPopup] = useState(false);
@@ -547,7 +549,12 @@ const Offers = () => {
       </header>
 
       {/* Loading State */}
-      {loading && <p className="loading-message">Loading offers...</p>}
+      {loading && (
+        <>
+          <LoadingAnnouncer label="Loading offers" />
+          {showLoadingSkeleton && <OffersListSkeleton count={4} />}
+        </>
+      )}
 
       {/* Error State */}
       {error && <p className="error-message">{error}</p>}

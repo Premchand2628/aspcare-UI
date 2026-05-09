@@ -4,6 +4,7 @@ import BottomNav from '../components/BottomNav';
 import PaymentMethodModal from '../components/PaymentMethodModal';
 import { readBookingsCache, writeBookingsCache } from '../utils/bookingsCache';
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
+import { OrdersListSkeleton, useDelayedFlag, LoadingAnnouncer } from '../components/Skeleton';
 import '../styles/Orders.css';
 
 const Orders = () => {
@@ -12,6 +13,7 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [visibleOrdersCount, setVisibleOrdersCount] = useState(ORDERS_BATCH_SIZE);
   const [loading, setLoading] = useState(true);
+  const showLoadingSkeleton = useDelayedFlag(loading, 150);
   const [error, setError] = useState('');
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
   const [upgradeOrder, setUpgradeOrder] = useState(null);
@@ -370,7 +372,12 @@ const Orders = () => {
 
       {/* Orders List */}
       <div className="orders-list">
-        {loading && <p className="loading-message">Loading orders...</p>}
+        {loading && (
+          <>
+            <LoadingAnnouncer label="Loading orders" />
+            {showLoadingSkeleton && <OrdersListSkeleton count={4} />}
+          </>
+        )}
         {!loading && notLoggedIn && (
           <div className="orders-login-prompt">
             <div className="orders-login-icon">🎉</div>

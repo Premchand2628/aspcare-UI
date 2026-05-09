@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import '../styles/RewardsCalculation.css';
+import { OrdersListSkeleton, LoadingAnnouncer } from '../components/Skeleton';
 
 const RewardsCalculation = () => {
   const navigate = useNavigate();
@@ -207,9 +208,10 @@ const RewardsCalculation = () => {
 
       {/* Drops Breakdown */}
       {loading ? (
-        <div className="loading-state">
-          <p>Loading rewards data...</p>
-        </div>
+        <>
+          <LoadingAnnouncer label="Loading rewards data" />
+          <OrdersListSkeleton count={3} />
+        </>
       ) : orders.length > 0 ? (
         <div className="drops-breakdown">
           <div className="drops-list">
