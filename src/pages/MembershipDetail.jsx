@@ -4,6 +4,7 @@ import BottomNav from '../components/BottomNav';
 import { readActiveMembershipCache, writeActiveMembershipCache } from '../utils/bookingsCache';
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import '../styles/MembershipDetail.css';
+import { DetailPageSkeleton, LoadingAnnouncer } from '../components/Skeleton';
 
 const MembershipDetail = () => {
   const navigate = useNavigate();
@@ -160,7 +161,8 @@ const MembershipDetail = () => {
     return (
       <div className="page-container">
         <button className="back-btn-absolute" onClick={() => navigate(-1)}>←</button>
-        <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading...</div>
+        <LoadingAnnouncer label="Loading membership details" />
+        <DetailPageSkeleton />
       </div>
     );
   }

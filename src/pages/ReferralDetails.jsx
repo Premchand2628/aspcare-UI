@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { withAuthHeader } from '../utils/auth';
 import '../styles/ReferralDetails.css';
+import { OrdersListSkeleton, LoadingAnnouncer } from '../components/Skeleton';
 
 const ReferralDetails = () => {
   const navigate = useNavigate();
@@ -196,9 +197,10 @@ const ReferralDetails = () => {
 
       {/* Referrals List */}
       {loading ? (
-        <div className="loading-state">
-          <p>Loading referral details...</p>
-        </div>
+        <>
+          <LoadingAnnouncer label="Loading referral details" />
+          <OrdersListSkeleton count={3} />
+        </>
       ) : referrals.length > 0 ? (
         <div className="referrals-list">
           {referrals.map((referral) => (

@@ -75,38 +75,100 @@
 
 /* Booking Info */
 .booking-info {
-  background-color: #f9f9f9;
-  padding: 20px;
-  border-radius: 15px;
+  background: #ffffff;
+  padding: 14px 14px 12px;
+  border-radius: 16px;
   margin-bottom: 20px;
+  border: 1px solid #ececf3;
+  box-shadow: 0 4px 14px rgba(20, 18, 60, 0.06);
+}
+
+.booking-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #e3e1f0;
+  margin-bottom: 8px;
+}
+
+.booking-info-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1a1f36;
+  letter-spacing: 0.2px;
+}
+
+.booking-mode-pill {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.booking-mode-pill.centre {
+  background: linear-gradient(135deg, #ede9fe 0%, #f5f3ff 100%);
+  color: #5b21b6;
+  border: 1px solid #d6cdfb;
+}
+
+.booking-mode-pill.home {
+  background: linear-gradient(135deg, #ccfbf1 0%, #e0fff8 100%);
+  color: #0f766e;
+  border: 1px solid #99f6e4;
 }
 
 .booking-row {
   display: grid;
-  grid-template-columns: 140px 12px 1fr;
+  grid-template-columns: 24px 110px 1fr;
   align-items: center;
-  column-gap: 8px;
+  column-gap: 10px;
   font-size: 14px;
-  color: #333;
-  margin-bottom: 10px;
+  color: #1a1f36;
+  padding: 8px 4px;
+  border-bottom: 1px solid #f4f3fa;
 }
 
 .booking-row:last-child {
-  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.booking-row-multiline {
+  align-items: flex-start;
+}
+
+.booking-row-multiline .booking-icon,
+.booking-row-multiline .booking-label {
+  padding-top: 1px;
+}
+
+.booking-icon {
+  font-size: 16px;
+  line-height: 1;
+  text-align: center;
 }
 
 .booking-label {
   font-weight: 600;
-  color: #2b2b2b;
-}
-
-.booking-separator {
-  color: #666;
-  text-align: center;
+  color: #6b7290;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
 }
 
 .booking-value {
-  font-weight: 500;
+  font-weight: 700;
+  color: #1a1f36;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.booking-value-accent {
+  color: #5E4DB2;
 }
 
 .washer-info {
@@ -853,17 +915,17 @@
   }
 
   .booking-info {
-    padding: 15px;
+    padding: 12px;
   }
 
   .booking-row {
-    grid-template-columns: 110px 12px 1fr;
+    grid-template-columns: 22px 96px 1fr;
     font-size: 13px;
-    margin-bottom: 8px;
+    padding: 7px 2px;
   }
 
   .booking-label {
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .promo-section {

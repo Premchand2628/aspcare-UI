@@ -19,16 +19,17 @@
 .booking-home-banner {
   background: linear-gradient(135deg, #0d9488, #14b8a6);
   border-radius: 12px;
-  padding: 8px 12px;
+  padding: 12px 16px;
   flex: 1;
+  width: 100%;
 }
 
 .booking-home-banner p {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.45;
 }
 
 .booking-home-banner p + p {
@@ -38,6 +39,104 @@
 .booking-home-banner strong {
   color: #ffffff;
   font-weight: 800;
+}
+
+/* Subscription Redemption Banner */
+.subscription-banner {
+  background: linear-gradient(135deg, #5E4DB2 0%, #7C6BD9 100%);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(94, 77, 178, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.subscription-banner.is-validated {
+  background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+  box-shadow: 0 6px 18px rgba(46, 125, 50, 0.28);
+}
+
+.subscription-banner.is-error {
+  background: linear-gradient(135deg, #b71c1c 0%, #e53935 100%);
+  box-shadow: 0 6px 18px rgba(183, 28, 28, 0.28);
+}
+
+.subscription-banner-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.subscription-banner-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.subscription-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.subscription-banner-title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  margin-bottom: 2px;
+}
+
+.subscription-banner-meta {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.subscription-banner-status {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.35;
+}
+
+.subscription-banner-price {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.subscription-banner-price-strike {
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: line-through;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.subscription-banner-price-final {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .subscription-banner { padding: 10px 12px; border-radius: 12px; }
+  .subscription-banner-icon { width: 30px; height: 30px; font-size: 15px; }
+  .subscription-banner-title { font-size: 13px; }
+  .subscription-banner-meta { font-size: 11px; }
+  .subscription-banner-status { font-size: 11px; }
+  .subscription-banner-price-final { font-size: 16px; }
 }
 
 .header-address-search {
@@ -244,10 +343,91 @@
 }
 
 .subscription-lock-note {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #5E4DB2;
-  margin: -4px 0 10px;
+  background: rgba(94, 77, 178, 0.08);
+  border: 1px dashed rgba(94, 77, 178, 0.35);
+  border-radius: 8px;
+  padding: 4px 10px;
+  margin: -2px 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.subscription-lock-note::before {
+  content: '🔒';
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.booking-wash-type-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Subscription locked summary list */
+.subscription-lock-summary {
+  background: linear-gradient(135deg, rgba(94, 77, 178, 0.06), rgba(124, 107, 217, 0.10));
+  border: 1px solid rgba(94, 77, 178, 0.25);
+  border-left: 4px solid #5E4DB2;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subscription-lock-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.subscription-lock-summary-label {
+  font-weight: 600;
+  color: #4a3f8a;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.subscription-lock-summary-sep {
+  color: #4a3f8a;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.subscription-lock-summary-value {
+  font-weight: 800;
+  color: #2e7d32;
+  background: #fff;
+  border: 1px solid rgba(46, 125, 50, 0.25);
+  padding: 3px 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.subscription-lock-summary-price {
+  color: #2e7d32;
+}
+
+@media (max-width: 480px) {
+  .subscription-lock-summary { padding: 10px 12px; border-radius: 10px; }
+  .subscription-lock-summary-row { font-size: 12px; gap: 6px; }
+  .subscription-lock-summary-value { font-size: 12px; padding: 2px 8px; }
 }
 
 .subscription-lock-note-on-card {
@@ -337,18 +517,88 @@
 /* Calendar Modal */
 .calendar-modal {
   background-color: white;
-  padding: 30px;
+  padding: 22px 18px 18px;
   border-radius: 20px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  max-width: 350px;
-  width: 90%;
+  max-width: 360px;
+  width: 92%;
   text-align: center;
 }
 
 .calendar-modal h3 {
+  font-size: 18px;
+  color: #1a1f36;
+  margin: 0 0 14px;
+  font-weight: 800;
+}
+
+.date-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+  max-height: 56vh;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.date-quick-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e3f3;
+  background: #ffffff;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  min-height: 72px;
+}
+
+.date-quick-card:hover {
+  border-color: #c9bff0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(94, 77, 178, 0.12);
+}
+
+.date-quick-card.selected {
+  background: linear-gradient(135deg, #5E4DB2 0%, #7c5ce7 100%);
+  border-color: transparent;
+  box-shadow: 0 6px 14px rgba(94, 77, 178, 0.32);
+}
+
+.date-quick-dow {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7290;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.date-quick-day {
   font-size: 20px;
-  color: #333;
-  margin-bottom: 20px;
+  font-weight: 800;
+  color: #1a1f36;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.date-quick-month {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7290;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.date-quick-card.selected .date-quick-dow,
+.date-quick-card.selected .date-quick-month {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.date-quick-card.selected .date-quick-day {
+  color: #ffffff;
 }
 
 .date-input {
@@ -1009,11 +1259,69 @@
   box-shadow: 0 6px 20px rgba(94, 77, 178, 0.4);
 }
 
+/* --- Review action row (back + review side-by-side for centre flow) --- */
+.review-action-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+.review-action-row .review-btn {
+  flex: 1 1 auto;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.review-back-btn {
+  flex: 0 0 auto;
+  min-width: 96px;
+  padding: 0 16px;
+  min-height: 100%;
+  border: none;
+  border-radius: 15px;
+  background: #ffffff;
+  color: #5E4DB2;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(94, 77, 178, 0.18);
+  border: 1.5px solid rgba(94, 77, 178, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.review-back-btn:hover {
+  transform: translateY(-2px);
+  background: #f3f0ff;
+  box-shadow: 0 6px 16px rgba(94, 77, 178, 0.25);
+}
+
+@media (max-width: 360px) {
+  .review-back-btn { min-width: 84px; padding: 0 12px; font-size: 14px; }
+}
+
 .benefits-note {
   font-size: 11px;
   color: #666;
   text-align: center;
   font-style: italic;
+}
+
+.benefits-note-error {
+  color: #b71c1c;
+  font-style: normal;
+  font-weight: 600;
+  background: rgba(229, 57, 53, 0.08);
+  border: 1px solid rgba(229, 57, 53, 0.25);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 8px 0;
 }
 
 /* Responsive */
@@ -1638,6 +1946,115 @@
   opacity: 0.95;
 }
 
+/* --- Centre card variant (shown after a centre is picked from /select-center) --- */
+.select-address-btn.centre-mode {
+  background: linear-gradient(135deg, #1a237e 0%, #5e35b1 55%, #ec407a 110%);
+  padding: 16px 18px;
+  box-shadow: 0 10px 24px rgba(94, 53, 177, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.select-address-btn.centre-mode::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 60%);
+  pointer-events: none;
+}
+
+.select-address-btn.centre-mode .select-address-content {
+  gap: 10px;
+}
+
+.centre-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.centre-card-icon {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.centre-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.centre-card-heading .select-address-label {
+  position: static;
+  opacity: 0.78;
+}
+
+.centre-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #fff;
+  word-break: break-word;
+}
+
+.select-address-btn.centre-mode .select-address-change {
+  position: static;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 6px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.select-address-btn.centre-mode .select-address-change:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.centre-card-address {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  opacity: 0.95;
+  padding-left: 48px; /* align under the name (icon width 36 + gap 12) */
+  word-break: break-word;
+}
+
+@media (max-width: 360px) {
+  .select-address-btn.centre-mode {
+    padding: 14px 14px;
+  }
+  .centre-card-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .centre-card-name { font-size: 15px; }
+  .centre-card-address {
+    font-size: 13px;
+    padding-left: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .centre-card-name { font-size: 17px; }
+  .centre-card-address { font-size: 15px; }
+}
+
 /* ============================================
    Address List Modal
    ============================================ */
@@ -1703,9 +2120,11 @@
 }
 
 .address-item {
+  position: relative;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 12px;
+  padding-right: 84px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1767,20 +2186,31 @@
 }
 
 .address-item-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  gap: 6px;
 }
 
 .address-item-edit,
 .address-item-delete {
-  background: none;
+  background: #fff;
   border: 1px solid transparent;
-  font-size: 12px;
-  font-weight: 700;
   cursor: pointer;
-  padding: 6px 10px;
+  padding: 0;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.address-item-edit svg,
+.address-item-delete svg {
+  display: block;
 }
 
 .address-item-edit {
@@ -1790,6 +2220,7 @@
 
 .address-item-edit:hover {
   background: #ede9fe;
+  transform: translateY(-1px);
 }
 
 .address-item-delete {
@@ -1799,6 +2230,7 @@
 
 .address-item-delete:hover {
   background: #fdecea;
+  transform: translateY(-1px);
 }
 
 .add-new-address-btn {
@@ -1952,4 +2384,46 @@
   .address-form-row.two-col {
     flex-direction: column;
   }
+}
+
+/* Default-address checkbox in saved-address form modal */
+.address-form-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #1a237e;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 0;
+}
+.address-form-checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #5e35b1;
+  cursor: pointer;
+}
+
+/* Default-address toggle inside saved-addresses modal */
+.address-default-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a237e;
+  cursor: pointer;
+  user-select: none;
+}
+.address-default-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #5e35b1;
+  cursor: pointer;
+}
+.address-default-toggle input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }

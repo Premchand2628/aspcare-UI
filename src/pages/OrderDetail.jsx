@@ -142,7 +142,22 @@ const OrderDetail = () => {
         'Accept': 'application/json'
       });
 
-      const response = await fetch(`/bookings/availability?date=${date}&serviceType=${serviceType}`, {
+      const params = new URLSearchParams();
+      params.set('date', date);
+      params.set('serviceType', serviceType);
+      // For non-HOME services, scope availability to the booked centre so other
+      // centres' bookings don't block this centre's slots (and vice-versa).
+      const isHome = String(serviceType || '').toUpperCase() === 'HOME';
+      if (!isHome) {
+        if (order?.serviceCentreId !== undefined && order?.serviceCentreId !== null) {
+          params.set('serviceCentreId', String(order.serviceCentreId));
+        }
+        if (order?.centreName) {
+          params.set('centreName', order.centreName);
+        }
+      }
+
+      const response = await fetch(`/bookings/availability?${params.toString()}`, {
         method: 'GET',
         headers
       });

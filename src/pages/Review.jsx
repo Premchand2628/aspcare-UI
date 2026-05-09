@@ -7,6 +7,7 @@ import { clearAuthSession, getValidatedAuthToken, withAuthHeader } from '../util
 import { readDealPricesCache, writeDealPricesCache } from '../utils/dealPricesCache';
 import { readSubscriptionsCache, writeSubscriptionsCache, clearSubscriptionsCache } from '../utils/subscriptionsCache';
 import '../styles/Review.css';
+import { ReviewPageSkeleton, useMountSkeleton, LoadingAnnouncer } from '../components/Skeleton';
 
 const Review = () => {
   const navigate = useNavigate();
@@ -35,8 +36,6 @@ const Review = () => {
   const [bookingSubmitError, setBookingSubmitError] = useState('');
   const [bookingSubmitSuccess, setBookingSubmitSuccess] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showSaveDefaultChoice, setShowSaveDefaultChoice] = useState(false);
-  const [saveDefaultChoice, setSaveDefaultChoice] = useState('no');
   const [subscriptionSaving, setSubscriptionSaving] = useState(0);
   const [showSubscriptionBanner, setShowSubscriptionBanner] = useState(false);
   const [matchedDealForPopup, setMatchedDealForPopup] = useState(null);
@@ -459,68 +458,6 @@ const Review = () => {
     setPromoCodeMessage('');
   }, [isSubscriptionRedeemed]);
 
-  useEffect(() => {
-    if (!isHomeService) {
-      setShowSaveDefaultChoice(false);
-      setSaveDefaultChoice('no');
-      return;
-    }
-
-    let cancelled = false;
-
-    const normalizeDefaultFlag = (value) => {
-      const flag = String(value ?? '').trim().toUpperCase();
-      return flag === 'Y' || flag === 'YES' || flag === 'TRUE' || flag === '1';
-    };
-
-    const fetchProfileDefaultFlag = async () => {
-      try {
-        const headers = withAuthHeader({
-          Accept: 'application/json'
-        });
-
-        const response = await fetch('/users/profile', {
-          method: 'GET',
-          headers
-        });
-
-        if (!response.ok) {
-          if (!cancelled) {
-            setShowSaveDefaultChoice(false);
-          }
-          return;
-        }
-
-        const data = await response.json();
-        const payload = data && typeof data === 'object' && data.data && typeof data.data === 'object'
-          ? data.data
-          : data;
-
-        const rawFlag = payload?.carAddressDefaultFlag
-          ?? payload?.car_address_default_flag
-          ?? payload?.car__address_default_flag
-          ?? 'N';
-
-        if (!cancelled) {
-          const isDefaultSaved = normalizeDefaultFlag(rawFlag);
-          setShowSaveDefaultChoice(!isDefaultSaved);
-          setSaveDefaultChoice('no');
-        }
-      } catch (error) {
-        console.error('Error fetching profile default flag:', error);
-        if (!cancelled) {
-          setShowSaveDefaultChoice(false);
-        }
-      }
-    };
-
-    fetchProfileDefaultFlag();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isHomeService]);
-
   // Calculate grand total
   const effectivePromoDiscount = isSubscriptionRedeemed ? 0 : promoDiscount;
   const grandTotal = (bookingData.subTotal || 0) - membershipDiscount - signupBonus - effectivePromoDiscount;
@@ -598,35 +535,8 @@ const Review = () => {
   };
 
   const saveDefaultBookingPreference = async () => {
-    if (!isHomeService || !showSaveDefaultChoice || saveDefaultChoice !== 'yes') {
-      return;
-    }
-
-    const headers = withAuthHeader({
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    });
-
-    const response = await fetch('/users/profile/default-booking', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        address: bookingData.address,
-        carNumber: bookingData.vehicleNumber,
-        saveAsDefault: true
-      })
-    });
-
-    let parsedBody = null;
-    try {
-      parsedBody = await response.json();
-    } catch {
-      parsedBody = null;
-    }
-
-    if (!response.ok) {
-      throw new Error(parsedBody?.message || 'Failed to save default address and car number');
-    }
+    // Default-as-default preference is now managed in the address modal on the Booking page.
+    return;
   };
 
   // Deal subscription payment from popup
@@ -768,12 +678,11 @@ const Review = () => {
     setShowPaymentModal(false);
     setBookingSubmitLoading(true);
     try {
-      await saveDefaultBookingPreference();
       navigate('/terms', {
         state: {
           ...bookingData,
           paymentMethod: method,
-          defaultPreferenceSaved: isHomeService && showSaveDefaultChoice && saveDefaultChoice === 'yes'
+          defaultPreferenceSaved: false
         }
       });
     } catch (error) {
@@ -784,8 +693,17 @@ const Review = () => {
     }
   };
 
+  const showMountSkeleton = useMountSkeleton(180);
+
   return (
     <div className="page-container review-page">
+      {(loading || showMountSkeleton) ? (
+        <>
+          <LoadingAnnouncer label="Preparing your review" />
+          <ReviewPageSkeleton />
+        </>
+      ) : (
+      <>
       {/* Phone Modal for Google OAuth Users */}
       {/* Celebration Banner */}
       {showCelebration && (
@@ -903,67 +821,38 @@ const Review = () => {
 
       {/* Booking Details */}
       <div className="booking-info">
-        <div className="booking-row">
-          <span className="booking-label">Service</span>
-          <span className="booking-separator">:</span>
-          <span className="booking-value">{isHomeService ? '@Home' : '@Centre'}</span>
+        <div className="booking-info-header">
+          <span className="booking-info-title">Booking Summary</span>
+          <span className={`booking-mode-pill ${isHomeService ? 'home' : 'centre'}`}>
+            {isHomeService ? '🏠 @Home' : '🏢 @Centre'}
+          </span>
         </div>
         <div className="booking-row">
+          <span className="booking-icon">🧴</span>
           <span className="booking-label">Wash Type</span>
-          <span className="booking-separator">:</span>
           <span className="booking-value">{bookingData.washType}</span>
         </div>
         <div className="booking-row">
+          <span className="booking-icon">🚗</span>
           <span className="booking-label">Vehicle</span>
-          <span className="booking-separator">:</span>
           <span className="booking-value">{bookingData.vehicleType}</span>
         </div>
         <div className="booking-row">
-          <span className="booking-label">Vehicle Number</span>
-          <span className="booking-separator">:</span>
+          <span className="booking-icon">🔢</span>
+          <span className="booking-label">Vehicle No.</span>
           <span className="booking-value">{bookingData.vehicleNumber}</span>
         </div>
-        <div className="booking-row">
+        <div className="booking-row booking-row-multiline">
+          <span className="booking-icon">📍</span>
           <span className="booking-label">Address</span>
-          <span className="booking-separator">:</span>
           <span className="booking-value">{bookingData.address}</span>
         </div>
         <div className="booking-row">
+          <span className="booking-icon">📅</span>
           <span className="booking-label">Date</span>
-          <span className="booking-separator">:</span>
-          <span className="booking-value">{formatDateForDisplay(bookingData.selectedDate)}</span>
+          <span className="booking-value booking-value-accent">{formatDateForDisplay(bookingData.selectedDate)}</span>
         </div>
       </div>
-
-      {showSaveDefaultChoice && (
-        <div className="save-default-card">
-          <p className="save-default-title">Save this address and car number as default?</p>
-          <div className="save-default-options">
-            <label className="save-default-option">
-              <input
-                type="radio"
-                name="save-default"
-                value="yes"
-                checked={saveDefaultChoice === 'yes'}
-                onChange={() => setSaveDefaultChoice('yes')}
-                disabled={bookingSubmitLoading}
-              />
-              <span>Yes</span>
-            </label>
-            <label className="save-default-option">
-              <input
-                type="radio"
-                name="save-default"
-                value="no"
-                checked={saveDefaultChoice === 'no'}
-                onChange={() => setSaveDefaultChoice('no')}
-                disabled={bookingSubmitLoading}
-              />
-              <span>No</span>
-            </label>
-          </div>
-        </div>
-      )}
 
       {/* Promo Code Section */}
       <div className="promo-section">
@@ -1207,6 +1096,8 @@ const Review = () => {
             <button className="review-login-popup-close" onClick={() => setShowLoginPopup(false)}>Maybe later</button>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
