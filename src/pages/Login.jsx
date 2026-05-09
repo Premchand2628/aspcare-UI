@@ -38,17 +38,8 @@ function Login() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
-  const [introFinished, setIntroFinished] = useState(false);
   const [showLoginOptions, setShowLoginOptions] = useState(false);
   const [showActionDivider, setShowActionDivider] = useState(false);
-
-  useEffect(() => {
-    const introTimer = setTimeout(() => {
-      setIntroFinished(true);
-    }, 2100);
-
-    return () => clearTimeout(introTimer);
-  }, []);
 
   // Initialize Facebook SDK
   useEffect(() => {
@@ -675,21 +666,9 @@ function Login() {
   const hasValidOtp = otp.trim().length === 6;
 
   return (
-    <div className={`login-container ${introFinished ? 'intro-finished' : 'intro-running'}`}>
-      {!introFinished && (
-        <div className="launch-intro" aria-hidden="true">
-          <div className="launch-intro-stage">
-            <span className="launch-intro-car">🚗</span>
-            <h1 className="launch-intro-asp">ASP</h1>
-          </div>
-        </div>
-      )}
-      <div className={`shutter-overlay ${introFinished ? 'open' : ''}`} aria-hidden="true">
-        <span className="shutter-panel shutter-top" />
-        <span className="shutter-panel shutter-bottom" />
-      </div>
+    <div className="login-container intro-finished">
       <div className="login-card">
-        <div className={`login-card-content ${introFinished ? 'reveal' : ''}`}>
+        <div className="login-card-content reveal">
         {/* Header */}
         <div className="login-header">
           <div className="asp-hero-brand" aria-label="ASP Car Care">
