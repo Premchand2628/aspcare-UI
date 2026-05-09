@@ -4,6 +4,7 @@ import BottomNav from '../components/BottomNav';
 import { writeBookingsCache, writeActiveMembershipCache } from '../utils/bookingsCache';
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import { readDealPricesCache, writeDealPricesCache } from '../utils/dealPricesCache';
+import { readServicesCache, writeServicesCache } from '../utils/servicesCache';
 import '../styles/Home.css';
 import { HomePageSkeleton, useMountSkeleton, LoadingAnnouncer } from '../components/Skeleton';
 
@@ -81,27 +82,34 @@ const Home = () => {
     return '/images/hatchback.png';
   };
 
+  const buildSlidesFromServices = (data) => (Array.isArray(data) ? data : []).map((s) => {
+    const config = SERVICE_CONFIG[s.serviceType] || {};
+    return {
+      id: s.serviceType,
+      className: config.className || s.serviceType,
+      offer: `${Math.round(s.discountPercentage)}% Off`,
+      label: s.displayName,
+      icon: s.icon || '',
+      cta: 'view details →',
+      image: config.image || '/images/hatchback.png',
+      onClick: () => navigate(config.path || '/booking'),
+    };
+  });
+
   const fetchServices = async () => {
+    // 1) Render instantly from cache
+    const cached = readServicesCache();
+    if (cached) setWashSlides(buildSlidesFromServices(cached));
+
+    // 2) Revalidate in background (stale-while-revalidate)
     try {
       const response = await fetch('/services');
       if (!response.ok) return;
       const data = await response.json();
-      const slides = data.map((s) => {
-        const config = SERVICE_CONFIG[s.serviceType] || {};
-        return {
-          id: s.serviceType,
-          className: config.className || s.serviceType,
-          offer: `${Math.round(s.discountPercentage)}% Off`,
-          label: s.displayName,
-          icon: s.icon || '',
-          cta: 'view details →',
-          image: config.image || '/images/hatchback.png',
-          onClick: () => navigate(config.path || '/booking'),
-        };
-      });
-      setWashSlides(slides);
+      writeServicesCache(Array.isArray(data) ? data : []);
+      setWashSlides(buildSlidesFromServices(data));
     } catch {
-      // keep washSlides empty on error
+      // keep cached / empty on error
     }
   };
 
