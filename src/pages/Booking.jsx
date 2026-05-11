@@ -4,7 +4,6 @@ import { getStoredPhone, toApiServiceType, toApiWaterProvidedBoolean } from '../
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import { readCache, writeCache, CACHE_KEYS } from '../utils/refDataCache';
 import '../styles/Booking.css';
-import { BookingPageSkeleton, useMountSkeleton, LoadingAnnouncer } from '../components/Skeleton';
 
 const normalizeText = (value) => String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
 
@@ -88,267 +87,11 @@ const Booking = () => {
   const [showWaterTermsConfirm, setShowWaterTermsConfirm] = useState(false);
   const [waterTermsChecked, setWaterTermsChecked] = useState(false);
   const [vehicleSlideIndex, setVehicleSlideIndex] = useState(0);
+  const [showDefaultPrefillPrompt, setShowDefaultPrefillPrompt] = useState(false);
+  const [applyingDefaultPrefill, setApplyingDefaultPrefill] = useState(false);
   const [prefillApplied, setPrefillApplied] = useState(false);
   const [dynamicVehicleTypes, setDynamicVehicleTypes] = useState([]);
   const [dynamicWashTypes, setDynamicWashTypes] = useState([]);
-
-  // Saved addresses (persisted via /users/addresses backend endpoints)
-  const ADDRESS_API_BASE = '/users/addresses';
-  const emptyAddressForm = {
-    label: 'Home',
-    fullName: '',
-    phone: '',
-    zipcode: '',
-    streetAddress: '',
-    area: '',
-    city: '',
-    state: '',
-    landmark: '',
-    isDefault: false,
-  };
-  const [savedAddresses, setSavedAddresses] = useState([]);
-  const [addressesLoading, setAddressesLoading] = useState(false);
-  const [showAddressList, setShowAddressList] = useState(false);
-  const [showAddressForm, setShowAddressForm] = useState(false);
-  const [editingAddressId, setEditingAddressId] = useState(null);
-  const [addressForm, setAddressForm] = useState(emptyAddressForm);
-  const [addressFormError, setAddressFormError] = useState('');
-  const [addressFormSaving, setAddressFormSaving] = useState(false);
-  const [selectedAddressId, setSelectedAddressId] = useState(null);
-
-  const fetchSavedAddresses = React.useCallback(async () => {
-    const token = getValidatedAuthToken();
-    if (!token) return;
-    setAddressesLoading(true);
-    try {
-      const response = await fetch(ADDRESS_API_BASE, {
-        method: 'GET',
-        headers: withAuthHeader({ Accept: 'application/json' }),
-      });
-      if (!response.ok) {
-        setAddressesLoading(false);
-        return;
-      }
-      const body = await response.json();
-      const list = Array.isArray(body?.data) ? body.data : [];
-      setSavedAddresses(list);
-      const def = list.find((a) => a.defaultAddress);
-      if (def && !selectedAddressId) {
-        setSelectedAddressId(def.id);
-      }
-    } catch (err) {
-      console.error('Fetch addresses error:', err);
-    } finally {
-      setAddressesLoading(false);
-    }
-  }, [selectedAddressId]);
-
-  useEffect(() => {
-    fetchSavedAddresses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const formatSavedAddress = (addr) => {
-    if (!addr) return '';
-    const parts = [
-      addr.streetAddress,
-      addr.area,
-      addr.city,
-      addr.state,
-      addr.zipcode,
-    ].filter((part) => part && String(part).trim().length > 0);
-    return parts.join(', ');
-  };
-
-  const openAddressList = () => {
-    setShowAddressList(true);
-    fetchSavedAddresses();
-  };
-
-  const closeAddressList = () => {
-    setShowAddressList(false);
-  };
-
-  const handleChooseAddress = (addr) => {
-    setSelectedAddressId(addr.id);
-    setSearchAddress(formatSavedAddress(addr));
-    setCentreName(addr.label || 'Home');
-    setShowAddressList(false);
-  };
-
-  const openNewAddressForm = () => {
-    setEditingAddressId(null);
-    setAddressForm(emptyAddressForm);
-    setAddressFormError('');
-    setShowAddressForm(true);
-  };
-
-  const openEditAddressForm = (addr) => {
-    setEditingAddressId(addr.id);
-    setAddressForm({
-      label: addr.label || 'Home',
-      fullName: addr.fullName || '',
-      phone: addr.phone || '',
-      zipcode: addr.zipcode || '',
-      streetAddress: addr.streetAddress || '',
-      area: addr.area || '',
-      city: addr.city || '',
-      state: addr.state || '',
-      landmark: addr.landmark || '',
-      isDefault: !!addr.defaultAddress,
-    });
-    setAddressFormError('');
-    setShowAddressForm(true);
-  };
-
-  const closeAddressForm = () => {
-    setShowAddressForm(false);
-    setEditingAddressId(null);
-    setAddressFormError('');
-  };
-
-  const handleAddressFormChange = (field, value) => {
-    setAddressForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSaveAddress = async () => {
-    const required = ['zipcode', 'streetAddress', 'area', 'city', 'state'];
-    const missing = required.find((key) => !String(addressForm[key] || '').trim());
-    if (missing) {
-      setAddressFormError('Please fill all required fields');
-      return;
-    }
-    if (!/^\d{6}$/.test(String(addressForm.zipcode).trim())) {
-      setAddressFormError('Please enter a valid 6-digit zipcode');
-      return;
-    }
-    const phoneTrimmed = String(addressForm.phone || '').trim();
-    if (phoneTrimmed && !/^\d{10}$/.test(phoneTrimmed)) {
-      setAddressFormError('Please enter a valid 10-digit phone number');
-      return;
-    }
-
-    const token = getValidatedAuthToken();
-    if (!token) {
-      setAddressFormError('Please log in to save addresses');
-      return;
-    }
-
-    const payload = {
-      label: addressForm.label || 'Home',
-      fullName: addressForm.fullName?.trim() || null,
-      phone: phoneTrimmed || null,
-      zipcode: addressForm.zipcode.trim(),
-      area: addressForm.area.trim(),
-      streetAddress: addressForm.streetAddress.trim(),
-      city: addressForm.city.trim(),
-      state: addressForm.state.trim(),
-      landmark: addressForm.landmark?.trim() || null,
-      defaultAddress: !!addressForm.isDefault,
-    };
-
-    setAddressFormSaving(true);
-    try {
-      const url = editingAddressId
-        ? `${ADDRESS_API_BASE}/${editingAddressId}`
-        : ADDRESS_API_BASE;
-      const method = editingAddressId ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: withAuthHeader({
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        }),
-        body: JSON.stringify(payload),
-      });
-
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok || body?.success === false) {
-        setAddressFormError(body?.message || 'Failed to save address');
-        return;
-      }
-
-      const saved = body?.data;
-      await fetchSavedAddresses();
-      if (saved) {
-        handleChooseAddress(saved);
-      }
-      closeAddressForm();
-    } catch (err) {
-      console.error('Save address error:', err);
-      setAddressFormError('Network error. Please try again.');
-    } finally {
-      setAddressFormSaving(false);
-    }
-  };
-
-  const handleDeleteAddress = async (id) => {
-    const token = getValidatedAuthToken();
-    if (!token) return;
-    try {
-      const response = await fetch(`${ADDRESS_API_BASE}/${id}`, {
-        method: 'DELETE',
-        headers: withAuthHeader({ Accept: 'application/json' }),
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        console.error('Delete address failed:', body);
-        return;
-      }
-      if (selectedAddressId === id) {
-        setSelectedAddressId(null);
-      }
-      await fetchSavedAddresses();
-    } catch (err) {
-      console.error('Delete address error:', err);
-    }
-  };
-
-  const [defaultTogglePending, setDefaultTogglePending] = useState(false);
-
-  const handleToggleDefaultForSelected = async (makeDefault) => {
-    if (!selectedAddressId) return;
-    const addr = savedAddresses.find((a) => a.id === selectedAddressId);
-    if (!addr) return;
-    const token = getValidatedAuthToken();
-    if (!token) return;
-    setDefaultTogglePending(true);
-    try {
-      const payload = {
-        label: addr.label || 'Home',
-        fullName: addr.fullName || null,
-        phone: addr.phone || null,
-        zipcode: addr.zipcode || '',
-        area: addr.area || '',
-        streetAddress: addr.streetAddress || '',
-        city: addr.city || '',
-        state: addr.state || '',
-        landmark: addr.landmark || null,
-        defaultAddress: !!makeDefault,
-      };
-      const response = await fetch(`${ADDRESS_API_BASE}/${addr.id}`, {
-        method: 'PUT',
-        headers: withAuthHeader({
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        }),
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        console.error('Update default failed:', body);
-        return;
-      }
-      await fetchSavedAddresses();
-    } catch (err) {
-      console.error('Toggle default error:', err);
-    } finally {
-      setDefaultTogglePending(false);
-    }
-  };
-
-  const selectedSavedAddress = savedAddresses.find((a) => a.id === selectedAddressId) || null;
 
   const isSubscriptionFlow = Boolean(selectedSubscription);
   const isSubscriptionApplied = isSubscriptionFlow && subscriptionValidated;
@@ -638,7 +381,32 @@ const Booking = () => {
     };
   };
 
+  const applyDefaultAddressAndCarNumber = async () => {
+    setApplyingDefaultPrefill(true);
+    try {
+      const profileDefaults = await fetchUserProfileDefaults();
+      if (!profileDefaults) {
+        setShowDefaultPrefillPrompt(false);
+        return;
+      }
 
+      if (profileDefaults.address) {
+        setSearchAddress(profileDefaults.address);
+      }
+
+      if (profileDefaults.carNumber) {
+        setVehicleNumber(profileDefaults.carNumber.toUpperCase());
+        setPrefillApplied(true);
+      }
+
+      setShowDefaultPrefillPrompt(false);
+    } catch (error) {
+      console.error('Error applying default booking details:', error);
+      setShowDefaultPrefillPrompt(false);
+    } finally {
+      setApplyingDefaultPrefill(false);
+    }
+  };
 
   const fetchAvailability = async (date, serviceType) => {
     setLoadingSlots(true);
@@ -678,11 +446,47 @@ const Booking = () => {
   }, [isHomeService]);
 
   useEffect(() => {
-    // Calendar uses inline date cards now; no native picker to auto-open.
+    if (!showCalendar) return;
+    const timer = setTimeout(() => {
+      if (dateInputRef.current?.showPicker) {
+        dateInputRef.current.showPicker();
+      }
+      dateInputRef.current?.focus?.();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [showCalendar]);
 
-  // (Removed: previous "Use saved details?" prompt. Default address is now
-  // managed directly inside the saved-addresses modal via a checkbox.)
+  useEffect(() => {
+    let isCancelled = false;
+
+    const checkDefaultPrefillFlag = async () => {
+      try {
+        const profileDefaults = await fetchUserProfileDefaults();
+        if (isCancelled) return;
+
+        if (!profileDefaults) {
+          setShowDefaultPrefillPrompt(false);
+          return;
+        }
+
+        if (isHomeService && profileDefaults.hasDefaultAddress) {
+          setShowDefaultPrefillPrompt(true);
+          return;
+        }
+
+        setShowDefaultPrefillPrompt(false);
+      } catch (error) {
+        console.error('Error checking default prefill flag:', error);
+        setShowDefaultPrefillPrompt(false);
+      }
+    };
+
+    checkDefaultPrefillFlag();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isHomeService]);
 
   // Populate address and map if centre is selected from SelectCenter page
   useEffect(() => {
@@ -792,23 +596,16 @@ const Booking = () => {
       setRateError('');
 
       try {
-        const headers = withAuthHeader({
-          Accept: 'application/json'
-        });
-
-        // Centre-aware lookup when a centre is selected; falls back to the
-        // global rate endpoint when there is no centre context (e.g. @Home
-        // bookings without a chosen centre, or initial preview).
         const params = new URLSearchParams({
           vehicleType: selectedVehicle,
           washLevel: washType.toUpperCase()
         });
 
-        const url = (selectedCentreId !== null && selectedCentreId !== undefined && Number(selectedCentreId) > 0)
-          ? `/rates/centre/${selectedCentreId}/price?${params.toString()}`
-          : `/rates?${params.toString()}`;
+        const headers = withAuthHeader({
+          Accept: 'application/json'
+        });
 
-        const response = await fetch(url, {
+        const response = await fetch(`/rates?${params.toString()}`, {
           method: 'GET',
           headers,
           signal: controller.signal
@@ -841,7 +638,7 @@ const Booking = () => {
     fetchRate();
 
     return () => controller.abort();
-  }, [selectedVehicle, washType, isSubscriptionApplied, selectedCentreId]);
+  }, [selectedVehicle, washType, isSubscriptionApplied]);
 
   // Recalculate price when water option changes
   useEffect(() => {
@@ -1165,21 +962,12 @@ const Booking = () => {
     setWaterOption('no-thanks');
   };
 
-  const showMountSkeleton = useMountSkeleton(200);
-  if (showMountSkeleton) {
-    return (
-      <div className="page-container">
-        <LoadingAnnouncer label="Loading booking" />
-        <BookingPageSkeleton />
-      </div>
-    );
-  }
-
   return (
     <div className="page-container">
       {/* Back Button Header */}
       <div className="booking-header">
-        {isHomeService && !isSubscriptionFlow && (
+        <button className="back-btn-absolute" onClick={() => navigate(-1)}>←</button>
+        {isHomeService && (
           <div className="booking-home-banner">
             <p><strong>100% cashback</strong> if your car is damaged</p>
             <p><strong>Sit, book &amp; relax</strong>: we come to your home and wash with full protection</p>
@@ -1187,102 +975,27 @@ const Booking = () => {
         )}
       </div>
 
-      {isSubscriptionFlow && (
-        <div className={`subscription-banner ${subscriptionValidated ? 'is-validated' : subscriptionValidationError ? 'is-error' : 'is-loading'}`}>
-          <div className="subscription-banner-row">
-            <div className="subscription-banner-icon" aria-hidden="true">
-              {subscriptionValidationLoading ? '⏳' : subscriptionValidated ? '✓' : subscriptionValidationError ? '!' : '★'}
-            </div>
-            <div className="subscription-banner-body">
-              <div className="subscription-banner-title">Subscription Redemption</div>
-              <div className="subscription-banner-meta">
-                {[
-                  selectedSubscription?.planTypeCode,
-                  formatVehicleTypeLabel(selectedSubscription?.carType),
-                  normalizeWashType(selectedSubscription?.washType),
-                  normalizeServiceType(selectedSubscription?.serviceType) === 'HOME' ? '@Home' : '@Center'
-                ].filter(Boolean).join(' • ')}
-              </div>
-              <div className="subscription-banner-status">
-                {subscriptionValidationLoading
-                  ? 'Validating subscription plan…'
-                  : subscriptionValidated
-                    ? `This wash is redeemable at ₹0${Number(selectedSubscription?.leftWashes) ? ` • ${selectedSubscription.leftWashes} wash${Number(selectedSubscription.leftWashes) === 1 ? '' : 'es'} left` : ''}`
-                    : subscriptionValidationError || 'Subscription is not validated yet.'}
-              </div>
-            </div>
-            {subscriptionValidated && (
-              <div className="subscription-banner-price">
-                <span className="subscription-banner-price-strike">{formatRate(rate.amount, rate.currency)}</span>
-                <span className="subscription-banner-price-final">₹0</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Map Section (kept hidden — preserves existing geolocation/marker logic) */}
-      <div className="map-section map-hidden" aria-hidden="true">
+      {/* Map Section */}
+      <div className="map-section">
         <div ref={mapRef} className="map-container"></div>
-      </div>
-
-      {/* Select Address Action / Selected Address Card / Selected Centre Card */}
-      <div className="select-address-row">
-        {!isHomeService && selectedCentre ? (
-          <button
-            type="button"
-            className="select-address-btn has-selection centre-mode"
-            onClick={() => navigate('/select-center', {
-              state: {
-                serviceType: resolvedServiceType,
-                subscription: location.state?.subscription || savedBooking?.subscription || null,
-                source: location.state?.source || null,
-                prefilledCarType: location.state?.prefilledCarType || null
-              }
-            })}
-          >
-            <span className="select-address-content">
-              <span className="centre-card-top">
-                <span className="centre-card-icon" aria-hidden="true">📍</span>
-                <span className="centre-card-heading">
-                  <span className="select-address-label">Service Centre</span>
-                  <span className="centre-card-name">
-                    {selectedCentre.name || selectedCentre.centreName || 'Service Centre'}
-                  </span>
-                </span>
-                <span className="select-address-change">Change</span>
-              </span>
-              {(selectedCentreAddress || selectedCentre.area) && (
-                <span className="select-address-text centre-card-address">
-                  {selectedCentreAddress || selectedCentre.area}
-                </span>
-              )}
-            </span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            className={`select-address-btn ${selectedSavedAddress ? 'has-selection' : ''}`}
-            onClick={openAddressList}
-          >
-            {selectedSavedAddress ? (
-              <span className="select-address-content">
-                <span className="select-address-label">{selectedSavedAddress.label || 'Address'}</span>
-                <span className="select-address-text">{formatSavedAddress(selectedSavedAddress)}</span>
-                <span className="select-address-change">Change</span>
-              </span>
-            ) : (
-              <span className="select-address-content">
-                <span className="select-address-text">Select Address</span>
-              </span>
-            )}
-          </button>
-        )}
       </div>
 
       {/* Booking Details */}
       <div className="booking-details">
         <div className="booking-info-card">
+          <div className="booking-centre">
+            <div className="centre-header-row">
+              <span className="centre-icon">🏢</span>
+              <span className="centre-name">{centreName}</span>
+            </div>
+            <textarea
+              className="centre-address-input"
+              value={searchAddress}
+              onChange={(e) => setSearchAddress(e.target.value)}
+              placeholder="Enter address"
+              rows={2}
+            />
+          </div>
           <div className="booking-schedule">
             <span className="schedule-icon">📅</span>
             <span>
@@ -1294,64 +1007,38 @@ const Booking = () => {
           <button className="points-badge" onClick={() => setShowCalendar(true)}>📅</button>
         </div>
 
-        {isSubscriptionSelectionLocked ? (
-          <div className="subscription-lock-summary" role="group" aria-label="Subscription locked details">
-            <div className="subscription-lock-summary-row">
-              <span className="subscription-lock-summary-label">🔒 Wash type locked by subscription plan</span>
-              <span className="subscription-lock-summary-sep">:</span>
-              <span className="subscription-lock-summary-value">{washType || normalizeWashType(selectedSubscription?.washType)}</span>
-            </div>
+        <div className="booking-wash-type-standalone">
+          <span className="wash-label-text">{washType ? 'selected wash type:' : 'select your wash type:'}</span>
+          <div className="wash-btn-group">
+            {(dynamicWashTypes.length > 0 ? dynamicWashTypes : ['Foam', 'Basic', 'Premium']).map((type) => (
+              <button
+                key={type}
+                className={`wash-btn ${washType === type ? 'wash-btn-selected' : ''}`}
+                onClick={() => !(isSubscriptionApplied || isSubscriptionSelectionLocked) && setWashType(washType === type ? '' : type)}
+                disabled={isSubscriptionApplied || isSubscriptionSelectionLocked}
+              >
+                {type}
+              </button>
+            ))}
           </div>
-        ) : (
-          <div className="booking-wash-type-standalone">
-            <span className="wash-label-text">{washType ? 'selected wash type:' : 'select your wash type:'}</span>
-            <div className="wash-btn-group">
-              {(dynamicWashTypes.length > 0 ? dynamicWashTypes : ['Foam', 'Basic', 'Premium']).map((type) => (
-                <button
-                  key={type}
-                  className={`wash-btn ${washType === type ? 'wash-btn-selected' : ''}`}
-                  onClick={() => !(isSubscriptionApplied || isSubscriptionSelectionLocked) && setWashType(washType === type ? '' : type)}
-                  disabled={isSubscriptionApplied || isSubscriptionSelectionLocked}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+          {isSubscriptionSelectionLocked && (
+            <p className="subscription-lock-note">Locked by subscription plan</p>
+          )}
+        </div>
 
         {/* Calendar Modal */}
         {showCalendar && (
           <div className="modal-overlay" onClick={() => setShowCalendar(false)}>
             <div className="calendar-modal" onClick={(e) => e.stopPropagation()}>
               <h3>Select Date</h3>
-              <div className="date-quick-grid">
-                {Array.from({ length: 14 }).map((_, i) => {
-                  const d = new Date();
-                  d.setHours(0, 0, 0, 0);
-                  d.setDate(d.getDate() + i);
-                  const iso = formatDateForApi(d);
-                  const selectedIso = selectedDate ? formatDateForApi(selectedDate) : '';
-                  const isSelected = iso === selectedIso;
-                  const isToday = i === 0;
-                  const isTomorrow = i === 1;
-                  const dow = d.toLocaleDateString(undefined, { weekday: 'short' });
-                  const day = d.getDate();
-                  const month = d.toLocaleDateString(undefined, { month: 'short' });
-                  return (
-                    <button
-                      key={iso}
-                      type="button"
-                      className={`date-quick-card ${isSelected ? 'selected' : ''}`}
-                      onClick={() => handleDateSelect(d)}
-                    >
-                      <span className="date-quick-dow">{isToday ? 'Today' : isTomorrow ? 'Tomorrow' : dow}</span>
-                      <span className="date-quick-day">{day}</span>
-                      <span className="date-quick-month">{month}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <input 
+                type="date" 
+                value={selectedDate ? formatDateForApi(selectedDate) : ''}
+                onChange={(e) => handleDateSelect(parseLocalDate(e.target.value))}
+                className="date-input"
+                min={new Date().toISOString().split('T')[0]}
+                ref={dateInputRef}
+              />
               <button className="close-modal-btn" onClick={() => setShowCalendar(false)}>Close</button>
             </div>
           </div>
@@ -1393,22 +1080,11 @@ const Booking = () => {
         )}
 
         {/* Vehicle Type Selection */}
-        {isSubscriptionSelectionLocked ? (
-          <div className="subscription-lock-summary" role="group" aria-label="Subscription locked vehicle">
-            <div className="subscription-lock-summary-row">
-              <span className="subscription-lock-summary-label">🔒 Vehicle type locked by subscription plan</span>
-              <span className="subscription-lock-summary-sep">:</span>
-              <span className="subscription-lock-summary-value">{formatVehicleTypeLabel(selectedVehicle || selectedSubscription?.carType)}</span>
-            </div>
-            <div className="subscription-lock-summary-row">
-              <span className="subscription-lock-summary-label">🔒 Price locked by subscription plan</span>
-              <span className="subscription-lock-summary-sep">:</span>
-              <span className="subscription-lock-summary-value subscription-lock-summary-price">{formatRate(0, 'INR')}</span>
-            </div>
-          </div>
-        ) : (
         <div className="vehicle-selection">
           <h3>{vehicleSelectionTitle}</h3>
+          {isSubscriptionSelectionLocked && (
+            <p className="subscription-lock-note">Locked by subscription plan</p>
+          )}
           <div className="vehicle-types">
             <div className="vehicle-train-window">
               <div
@@ -1472,66 +1148,44 @@ const Booking = () => {
             </div>
           </div>
         </div>
-        )}
 
-        {/* Water Discount Option + Wash Type combined row on desktop */}
-        <div className="water-wash-row">
-          {isHomeService && !isSubscriptionApplied && (
-            <div className="water-option-section">
-              <div className="water-option">
-                <input
-                  type="radio"
-                  id="give-water"
-                  name="water"
-                  value="give-water"
-                  checked={waterOption === 'give-water'}
-                  onChange={(e) => handleWaterOptionSelect(e.target.value)}
-                  disabled={isSubscriptionApplied}
-                />
-                <label htmlFor="give-water">Get flat $100 by giving water</label>
-                <button
-                  type="button"
-                  className="water-help-btn"
-                  aria-label="View water offer terms and conditions"
-                  onClick={() => setShowWaterTermsInfo(true)}
-                >
-                  ?
-                </button>
-              </div>
-              <div className="water-option">
-                <input
-                  type="radio"
-                  id="no-thanks"
-                  name="water"
-                  value="no-thanks"
-                  checked={waterOption === 'no-thanks'}
-                  onChange={(e) => handleWaterOptionSelect(e.target.value)}
-                  disabled={isSubscriptionApplied}
-                />
-                <label htmlFor="no-thanks">No Thanks</label>
-              </div>
+        {/* Water Discount Option */}
+        {isHomeService && !isSubscriptionApplied && (
+          <div className="water-option-section">
+            <div className="water-option">
+              <input
+                type="radio"
+                id="give-water"
+                name="water"
+                value="give-water"
+                checked={waterOption === 'give-water'}
+                onChange={(e) => handleWaterOptionSelect(e.target.value)}
+                disabled={isSubscriptionApplied}
+              />
+              <label htmlFor="give-water">Get flat $100 by giving water</label>
+              <button
+                type="button"
+                className="water-help-btn"
+                aria-label="View water offer terms and conditions"
+                onClick={() => setShowWaterTermsInfo(true)}
+              >
+                ?
+              </button>
             </div>
-          )}
-          <div className="booking-wash-type-wrap">
-            {!isSubscriptionSelectionLocked && (
-              <div className="booking-wash-type-standalone booking-wash-type-in-row">
-                <span className="wash-label-text">{washType ? 'selected wash type:' : 'select your wash type:'}</span>
-                <div className="wash-btn-group">
-                  {(dynamicWashTypes.length > 0 ? dynamicWashTypes : ['Foam', 'Basic', 'Premium']).map((type) => (
-                    <button
-                      key={type}
-                      className={`wash-btn ${washType === type ? 'wash-btn-selected' : ''}`}
-                      onClick={() => !(isSubscriptionApplied || isSubscriptionSelectionLocked) && setWashType(washType === type ? '' : type)}
-                      disabled={isSubscriptionApplied || isSubscriptionSelectionLocked}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="water-option">
+              <input
+                type="radio"
+                id="no-thanks"
+                name="water"
+                value="no-thanks"
+                checked={waterOption === 'no-thanks'}
+                onChange={(e) => handleWaterOptionSelect(e.target.value)}
+                disabled={isSubscriptionApplied}
+              />
+              <label htmlFor="no-thanks">No Thanks</label>
+            </div>
           </div>
-        </div>
+        )}
 
         {isHomeService && showWaterTermsInfo && (
           <div className="modal-overlay water-terms-overlay sunrise-overlay" onClick={() => setShowWaterTermsInfo(false)}>
@@ -1539,6 +1193,33 @@ const Booking = () => {
               <h3>Terms & Conditions</h3>
               <p>{waterTermsText}</p>
               <button className="close-modal-btn" onClick={() => setShowWaterTermsInfo(false)}>Close</button>
+            </div>
+          </div>
+        )}
+
+        {isHomeService && showDefaultPrefillPrompt && (
+          <div className="modal-overlay default-prefill-overlay" onClick={() => !applyingDefaultPrefill && setShowDefaultPrefillPrompt(false)}>
+            <div className="default-prefill-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Use saved details?</h3>
+              <p>Your profile has default car and address settings. Do you want to use them for this booking?</p>
+              <div className="default-prefill-actions">
+                <button
+                  type="button"
+                  className="default-prefill-no-btn"
+                  onClick={() => setShowDefaultPrefillPrompt(false)}
+                  disabled={applyingDefaultPrefill}
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  className="default-prefill-yes-btn"
+                  onClick={applyDefaultAddressAndCarNumber}
+                  disabled={applyingDefaultPrefill}
+                >
+                  {applyingDefaultPrefill ? 'Applying...' : 'Yes'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1564,9 +1245,13 @@ const Booking = () => {
           </div>
         )}
 
-        {isSubscriptionFlow && subscriptionValidationError && !subscriptionValidationLoading && (
-          <p className="benefits-note benefits-note-error">
-            {subscriptionValidationError}
+        {isSubscriptionFlow && (
+          <p className="benefits-note">
+            {subscriptionValidationLoading
+              ? 'Validating subscription plan...'
+              : subscriptionValidated
+                ? 'Subscription validated. This wash is redeemable at ₹0.'
+                : subscriptionValidationError || 'Subscription is not validated yet.'}
           </p>
         )}
 
@@ -1599,21 +1284,7 @@ const Booking = () => {
           <p className="vehicle-number-error">{vehicleNumberError}</p>
         )}
 
-        <div className="review-action-row">
-          <button
-            type="button"
-            className="review-back-btn"
-            onClick={() => navigate(-1)}
-            aria-label="Go back"
-          >
-            Go back
-          </button>
-          <button className="review-btn" onClick={() => {
-          if (!selectedAddressId || !selectedSavedAddress) {
-            setVehicleNumberError('Please select an address');
-            openAddressList();
-            return;
-          }
+        <button className="review-btn" onClick={() => {
           if (!selectedDate) {
             setVehicleNumberError('Please select a date');
             return;
@@ -1673,252 +1344,8 @@ const Booking = () => {
         }}>
           Review
         </button>
-        </div>
         <p className="benefits-note">*We will add all membership benefits in review page</p>
       </div>
-
-      {/* Saved Addresses Modal */}
-      {showAddressList && (
-        <div className="modal-overlay" onClick={closeAddressList}>
-          <div className="address-list-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="address-modal-header">
-              <h3>Saved Addresses</h3>
-              <button type="button" className="address-modal-close" onClick={closeAddressList} aria-label="Close">×</button>
-            </div>
-
-            {addressesLoading ? (
-              <div className="address-empty-state">
-                <p>Loading saved addresses…</p>
-              </div>
-            ) : savedAddresses.length === 0 ? (
-              <div className="address-empty-state">
-                <p>You don't have any saved addresses yet.</p>
-              </div>
-            ) : (
-              <ul className="address-list">
-                {savedAddresses.map((addr) => (
-                  <li
-                    key={addr.id}
-                    className={`address-item ${selectedAddressId === addr.id ? 'selected' : ''}`}
-                  >
-                    <button
-                      type="button"
-                      className="address-item-main"
-                      onClick={() => handleChooseAddress(addr)}
-                    >
-                      <span className="address-item-label">{addr.label || 'Home'}</span>
-                      <span className="address-item-name">{addr.fullName}</span>
-                      <span className="address-item-text">{formatSavedAddress(addr)}</span>
-                      {addr.landmark && (
-                        <span className="address-item-landmark">Landmark: {addr.landmark}</span>
-                      )}
-                      {addr.phone && (
-                        <span className="address-item-phone">📞 {addr.phone}</span>
-                      )}
-                    </button>
-                    <div className="address-item-actions">
-                      <button
-                        type="button"
-                        className="address-item-edit"
-                        onClick={() => openEditAddressForm(addr)}
-                        aria-label="Edit address"
-                        title="Edit"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        className="address-item-delete"
-                        onClick={() => handleDeleteAddress(addr.id)}
-                        aria-label="Delete address"
-                        title="Delete"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6" />
-                          <path d="M14 11v6" />
-                          <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {selectedSavedAddress && (
-              <label className="address-default-toggle">
-                <input
-                  type="checkbox"
-                  checked={!!selectedSavedAddress.defaultAddress}
-                  disabled={defaultTogglePending}
-                  onChange={(e) => handleToggleDefaultForSelected(e.target.checked)}
-                />
-                <span>Save as default address</span>
-              </label>
-            )}
-
-            <button
-              type="button"
-              className="add-new-address-btn"
-              onClick={openNewAddressForm}
-            >
-              + Add new address
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Address Form Modal */}
-      {showAddressForm && (
-        <div className="modal-overlay" onClick={closeAddressForm}>
-          <div className="address-form-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="address-modal-header">
-              <h3>{editingAddressId ? 'Edit Address' : 'Add New Address'}</h3>
-              <button type="button" className="address-modal-close" onClick={closeAddressForm} aria-label="Close">×</button>
-            </div>
-
-            <div className="address-form-grid">
-              <div className="address-form-row">
-                <label className="address-form-label">Save as</label>
-                <div className="address-label-options">
-                  {['Home', 'Work', 'Other'].map((opt) => (
-                    <button
-                      type="button"
-                      key={opt}
-                      className={`address-label-chip ${addressForm.label === opt ? 'active' : ''}`}
-                      onClick={() => handleAddressFormChange('label', opt)}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="address-form-row">
-                <label className="address-form-label">Zipcode *</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  className="address-form-input"
-                  value={addressForm.zipcode}
-                  maxLength={6}
-                  onChange={(e) => handleAddressFormChange('zipcode', e.target.value.replace(/\D/g, ''))}
-                  placeholder="6-digit zipcode"
-                />
-              </div>
-
-              <div className="address-form-row">
-                <label className="address-form-label">Area / Locality *</label>
-                <input
-                  type="text"
-                  className="address-form-input"
-                  value={addressForm.area}
-                  onChange={(e) => handleAddressFormChange('area', e.target.value)}
-                  placeholder="Area, sector, village"
-                />
-              </div>
-
-              <div className="address-form-row">
-                <label className="address-form-label">Street address *</label>
-                <input
-                  type="text"
-                  className="address-form-input"
-                  value={addressForm.streetAddress}
-                  onChange={(e) => handleAddressFormChange('streetAddress', e.target.value)}
-                  placeholder="House no., building, street"
-                />
-              </div>
-
-              <div className="address-form-row two-col">
-                <div>
-                  <label className="address-form-label">City *</label>
-                  <input
-                    type="text"
-                    className="address-form-input"
-                    value={addressForm.city}
-                    onChange={(e) => handleAddressFormChange('city', e.target.value)}
-                    placeholder="City"
-                  />
-                </div>
-                <div>
-                  <label className="address-form-label">State *</label>
-                  <input
-                    type="text"
-                    className="address-form-input"
-                    value={addressForm.state}
-                    onChange={(e) => handleAddressFormChange('state', e.target.value)}
-                    placeholder="State"
-                  />
-                </div>
-              </div>
-
-              <div className="address-form-row">
-                <label className="address-form-label">Landmark (optional)</label>
-                <input
-                  type="text"
-                  className="address-form-input"
-                  value={addressForm.landmark}
-                  onChange={(e) => handleAddressFormChange('landmark', e.target.value)}
-                  placeholder="Nearby landmark"
-                />
-              </div>
-
-              <div className="address-form-row">
-                <label className="address-form-label">Full name (optional)</label>
-                <input
-                  type="text"
-                  className="address-form-input"
-                  value={addressForm.fullName}
-                  onChange={(e) => handleAddressFormChange('fullName', e.target.value)}
-                  placeholder="Enter full name"
-                />
-              </div>
-
-              <div className="address-form-row">
-                <label className="address-form-label">Phone number (optional)</label>
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  className="address-form-input"
-                  value={addressForm.phone}
-                  maxLength={10}
-                  onChange={(e) => handleAddressFormChange('phone', e.target.value.replace(/\D/g, ''))}
-                  placeholder="10-digit mobile number"
-                />
-              </div>
-
-              <div className="address-form-row">
-                <label className="address-form-checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={!!addressForm.isDefault}
-                    onChange={(e) => handleAddressFormChange('isDefault', e.target.checked)}
-                  />
-                  <span>Set as default address</span>
-                </label>
-              </div>
-
-              {addressFormError && (
-                <p className="address-form-error">{addressFormError}</p>
-              )}
-
-              <div className="address-form-actions">
-                <button type="button" className="address-form-cancel" onClick={closeAddressForm} disabled={addressFormSaving}>
-                  Cancel
-                </button>
-                <button type="button" className="address-form-save" onClick={handleSaveAddress} disabled={addressFormSaving}>
-                  {addressFormSaving ? 'Saving…' : (editingAddressId ? 'Update Address' : 'Save Address')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -4,14 +4,42 @@ import BottomNav from '../components/BottomNav';
 import { withAuthHeader } from '../utils/auth';
 import { readCache, writeCache, CACHE_KEYS } from '../utils/refDataCache';
 import '../styles/SelectCenter.css';
-import { CentresListSkeleton, LoadingAnnouncer } from '../components/Skeleton';
 
 const normalizeServiceType = (value) => {
   const normalized = String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
   if (normalized === 'SELFDRIVE') return 'SELF_DRIVE';
   if (normalized === 'SELF DRIVE') return 'SELF_DRIVE';
   if (normalized === 'HOME') return 'HOME';
-  return normalized || 'SELF_DRIVE';
+  if (normalized === 'SERVICE_CENTRE' || normalized === 'SERVICE_CENTER' || normalized === 'CENTRE' || normalized === 'CENTER') return 'SERVICE_CENTRE';
+  if (normalized === 'TEFLON') return 'TEFLON';
+  if (normalized === 'ASPCARE' || normalized === 'ASP_CARE' || normalized === 'ASP') return 'ASPCARE';
+  return normalized || 'SERVICE_CENTRE';
+};
+
+// For HOME service we only show centres within this radius from the user.
+const HOME_SERVICE_RADIUS_KM = 10;
+
+// Header copy + image per service type. The header uses a leading '@' to match
+// the existing visual style (e.g. '@service-center').
+const SERVICE_TYPE_META = {
+  SERVICE_CENTRE: { title: '@service-center', banner: '/images/servicecentre.png' },
+  HOME:           { title: '@home',           banner: '/images/servicecentre.png' },
+  TEFLON:         { title: '@teflon',         banner: '/images/servicecentre.png' },
+  ASPCARE:        { title: '@asp-care',       banner: '/images/servicecentre.png' },
+  SELF_DRIVE:     { title: '@service-center', banner: '/images/servicecentre.png' },
+};
+
+// Map service type -> the centre boolean flag(s) that must be true for the
+// centre to be eligible. `center_both=true` means the centre offers both
+// SERVICE_CENTRE and HOME, so it's eligible for either.
+const centreOffersServiceType = (centre, type) => {
+  if (!centre) return false;
+  const both = Boolean(centre.center_both ?? centre.centerBoth);
+  if (type === 'HOME')           return both || Boolean(centre.center_home    ?? centre.centerHome);
+  if (type === 'SERVICE_CENTRE') return both || Boolean(centre.center_service ?? centre.centerService);
+  if (type === 'TEFLON')         return Boolean(centre.center_teflon ?? centre.centerTeflon);
+  if (type === 'ASPCARE')        return Boolean(centre.center_asp    ?? centre.centerAsp);
+  return true;
 };
 
 const normalizeKeyText = (value) => String(value || '').trim().toUpperCase().replace(/\s+/g, ' ');
@@ -95,15 +123,6 @@ const formatDistance = (distanceKm) => {
   return `${distanceKm.toFixed(1)} km`;
 };
 
-const formatBasePrice = (centre) => {
-  const raw = centre?.basePrice ?? centre?.base_price;
-  if (raw === null || raw === undefined || raw === '') return '';
-  const num = Number(raw);
-  if (!Number.isFinite(num)) return '';
-  // Display whole numbers without decimals, otherwise keep 2 decimals.
-  return Number.isInteger(num) ? `$${num}` : `$${num.toFixed(2)}`;
-};
-
 const getCentreMapsUrl = (centre) => {
   const raw = String(centre?.maps_url || centre?.mapsUrl || centre?.mapsURL || '').trim();
   if (!raw) return null;
@@ -115,7 +134,9 @@ const SelectCenter = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const subscription = location.state?.subscription || null;
-  const serviceType = normalizeServiceType(location.state?.serviceType || subscription?.serviceType || 'SELF_DRIVE');
+  const serviceType = normalizeServiceType(location.state?.serviceType || subscription?.serviceType || 'SERVICE_CENTRE');
+  const headerMeta = SERVICE_TYPE_META[serviceType] || SERVICE_TYPE_META.SERVICE_CENTRE;
+  const isHomeService = serviceType === 'HOME';
   const [areas, setAreas] = useState([]);
   const [selectedArea, setSelectedArea] = useState('');
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -132,6 +153,10 @@ const SelectCenter = () => {
   const [centreSlotCounts, setCentreSlotCounts] = useState({});
   const [loadingSlotCounts, setLoadingSlotCounts] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+  const [priceModalCentre, setPriceModalCentre] = useState(null);
+  const [priceModalRows, setPriceModalRows] = useState([]);
+  const [priceModalLoading, setPriceModalLoading] = useState(false);
+  const [priceModalError, setPriceModalError] = useState('');
   const centresListRef = useRef(null);
 
   // Fetch areas on component mount
@@ -160,12 +185,15 @@ const SelectCenter = () => {
     );
   }, []);
 
-  // Fetch centres when area is selected
+  // Fetch centres when area is selected. Re-fetch when the user's geo arrives
+  // for HOME service (so we can apply the 10 km filter once we know where they
+  // are).
   useEffect(() => {
     if (selectedArea) {
       fetchCentres(selectedArea);
     }
-  }, [selectedArea, selectedDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedArea, selectedDate, userLocation?.lat, userLocation?.lng, serviceType]);
 
   useEffect(() => {
     if (!selectedArea || loadingCentres) return;
@@ -202,12 +230,34 @@ const SelectCenter = () => {
     }
   };
 
+  // Apply the eligibility rules client-side as a fallback in case the backend
+  // returns the un-filtered list (boolean-flag filter for all types, plus 10 km
+  // radius for HOME). Once the backend honours `serviceType` + `lat/lng` these
+  // become no-ops because the list will already be correct.
+  const applyClientSideFilters = (list) => {
+    let filtered = (list || []).filter((c) => centreOffersServiceType(c, serviceType));
+    if (isHomeService && userLocation) {
+      filtered = filtered.filter((c) => {
+        const coords = extractCoordinatesFromCentre(c);
+        if (!coords) return false;
+        return calculateDistanceKm(userLocation, coords) <= HOME_SERVICE_RADIUS_KM;
+      });
+    }
+    return filtered;
+  };
+
   const fetchCentres = async (area) => {
-    const cacheKey = CACHE_KEYS.CENTRES + ':' + area.toLowerCase();
+    // Cache key now includes serviceType + (rough) user lat/lng so HOME and
+    // SERVICE_CENTRE results don't collide and the radius cache is per-location.
+    const geoKey = isHomeService && userLocation
+      ? `:${userLocation.lat.toFixed(2)},${userLocation.lng.toFixed(2)}`
+      : '';
+    const cacheKey = `${CACHE_KEYS.CENTRES}:${serviceType}:${area.toLowerCase()}${geoKey}`;
     const cached = readCache(cacheKey);
     if (cached) {
-      setCentres(cached);
-      fetchCentreSlotCounts(cached);
+      const filtered = applyClientSideFilters(cached);
+      setCentres(filtered);
+      fetchCentreSlotCounts(filtered);
       setLoadingCentres(false);
       return;
     }
@@ -216,8 +266,17 @@ const SelectCenter = () => {
       const headers = withAuthHeader({
         'Accept': 'application/json'
       });
-      
-      const response = await fetch(`/centres/search?area=${encodeURIComponent(area)}`, {
+
+      const params = new URLSearchParams({ area, serviceType });
+      if (isHomeService) {
+        params.set('radiusKm', String(HOME_SERVICE_RADIUS_KM));
+        if (userLocation) {
+          params.set('lat', String(userLocation.lat));
+          params.set('lng', String(userLocation.lng));
+        }
+      }
+
+      const response = await fetch(`/centres/search?${params.toString()}`, {
         method: 'GET',
         headers
       });
@@ -230,9 +289,10 @@ const SelectCenter = () => {
             : Array.isArray(data?.data)
               ? data.data
               : [];
-        setCentres(normalizedCentres);
+        const filtered = applyClientSideFilters(normalizedCentres);
+        setCentres(filtered);
         writeCache(cacheKey, normalizedCentres);
-        fetchCentreSlotCounts(normalizedCentres);
+        fetchCentreSlotCounts(filtered);
       } else {
         setCentres([]);
         setCentreSlotCounts({});
@@ -245,6 +305,68 @@ const SelectCenter = () => {
     } finally {
       setLoadingCentres(false);
     }
+  };
+
+  // ----- Price details modal -----
+  // Tries the new dedicated endpoint first; falls back to a per-(car,wash)
+  // /rates lookup if the dedicated endpoint isn't deployed yet.
+  const openPriceDetails = async (centre) => {
+    setPriceModalCentre(centre);
+    setPriceModalRows([]);
+    setPriceModalError('');
+    setPriceModalLoading(true);
+
+    // The carwash_service_centre table stores `centre_code`, while
+    // carwash_centre_rate stores the matching value as `rate_center_code`.
+    // Prefer centre_code from the centre row — that's the join key.
+    const rateCode = centre.centre_code || centre.centreCode || centre.rate_center_code || centre.rateCenterCode;
+    const centreId = getCentreId(centre);
+    const serviceMode = isHomeService ? 'HOME' : 'SERVICE_CENTRE';
+
+    try {
+      const headers = withAuthHeader({ Accept: 'application/json' });
+      const params = new URLSearchParams({ serviceMode });
+      if (rateCode) params.set('rateCenterCode', rateCode);
+      if (centreId !== null && centreId !== undefined) params.set('centreId', String(centreId));
+
+      const response = await fetch(`/rates/centre?${params.toString()}`, {
+        method: 'GET',
+        headers
+      });
+
+      if (!response.ok) {
+        setPriceModalError('Price details are not available right now.');
+        return;
+      }
+
+      const data = await response.json();
+      const rows = (Array.isArray(data) ? data : data?.rates || [])
+        .map((r) => ({
+          carType: r.carType || r.car_type || r.vehicleType,
+          washType: r.washType || r.wash_type || r.washLevel,
+          price: Number(r.price ?? r.amount ?? 0),
+          currency: r.currency || 'INR'
+        }))
+        .filter((r) => r.carType && r.washType && Number.isFinite(r.price));
+
+      if (!rows.length) {
+        setPriceModalError('No prices configured for this centre.');
+        return;
+      }
+      setPriceModalRows(rows);
+    } catch (err) {
+      console.error('price details fetch failed', err);
+      setPriceModalError('Unable to load prices. Please try again.');
+    } finally {
+      setPriceModalLoading(false);
+    }
+  };
+
+  const closePriceDetails = () => {
+    setPriceModalCentre(null);
+    setPriceModalRows([]);
+    setPriceModalError('');
+    setPriceModalLoading(false);
   };
 
   const getCentreId = (centre) => centre?.id ?? centre?.centreId ?? centre?.serviceCentreId ?? null;
@@ -425,7 +547,7 @@ const SelectCenter = () => {
         <header className="select-center-header">
           <button className="back-btn" onClick={() => navigate(-1)}>←</button>
           <div className="header-copy">
-            <h2 className="header-title">@service-center</h2>
+            <h2 className="header-title">{headerMeta.title}</h2>
           </div>
         </header>
       </div>
@@ -468,88 +590,74 @@ const SelectCenter = () => {
           <p className="center-filter-note">Check slot availability on preferred date &amp; location</p>
         </div>
 
+        <div className="service-centre-banner">
+          <img src="/images/servicecentre.png" alt="Service Centre" />
+        </div>
+
         {(loadingCentres || selectedArea) && (
           <div className="centers-overlay-layer" ref={centresListRef}>
             {loadingCentres ? (
               <div className="loading-message loading-message-overlay">
-                <LoadingAnnouncer label="Loading service centres" />
-                <CentresListSkeleton count={3} />
+                Loading service centres...
               </div>
             ) : (
               <div className="centers-list centers-list-overlay">
                 {centres.length > 0 ? (
-                  (() => {
-                    // Find the lowest base price across the visible centres so we can tag it.
-                    const numericPrices = centres
-                      .map(c => Number(c?.basePrice ?? c?.base_price))
-                      .filter(n => Number.isFinite(n) && n > 0);
-                    const minPrice = numericPrices.length ? Math.min(...numericPrices) : null;
-                    const lowestCount = minPrice !== null
-                      ? numericPrices.filter(n => n === minPrice).length
-                      : 0;
+                  centres.map(centre => (
+                    <div 
+                      key={getCentreKey(centre)} 
+                      className="center-item"
+                      onClick={() => handleSelectCentre(centre)}
+                    >
+                      <div className="center-availability-badge">
+                        <p className="center-availability-title">Availability:</p>
+                        <p className="center-availability-slots">
+                          {(() => {
+                            const slotCount = centreSlotCounts[getCentreKey(centre)];
+                            if (loadingSlotCounts && (slotCount === undefined || slotCount === null)) {
+                              return 'Checking...';
+                            }
+                            if (slotCount === null || slotCount === undefined) {
+                              return '-- slots';
+                            }
+                            return `${slotCount} slots`;
+                          })()}
+                        </p>
+                        <p className="center-availability-date">{formatDateDisplay(selectedDate)}</p>
+                      </div>
 
-                    return centres.map(centre => {
-                      const slotCount = centreSlotCounts[getCentreKey(centre)];
-                      let slotText;
-                      if (loadingSlotCounts && (slotCount === undefined || slotCount === null)) {
-                        slotText = 'Checking…';
-                      } else if (slotCount === null || slotCount === undefined) {
-                        slotText = '-- slots';
-                      } else {
-                        slotText = `${slotCount} slots`;
-                      }
-                      const priceText = formatBasePrice(centre);
-                      const priceNum = Number(centre?.basePrice ?? centre?.base_price);
-                      // Only show the "Lowest" badge when there is a meaningful comparison
-                      // (more than one centre, exactly one minimum, and at least 2 priced centres).
-                      const isLowest = minPrice !== null
-                        && numericPrices.length >= 2
-                        && lowestCount === 1
-                        && Number.isFinite(priceNum)
-                        && priceNum === minPrice;
-
-                      return (
-                        <div
-                          key={getCentreKey(centre)}
-                          className={`center-item${isLowest ? ' is-lowest' : ''}`}
-                          onClick={() => handleSelectCentre(centre)}
-                        >
-                          {isLowest && (
-                            <span className="center-lowest-badge">★ Lowest price</span>
-                          )}
-                          <div className="center-card-header">
-                            <div className="center-heading">
-                              <h3 className="center-name">{centre.name}</h3>
-                              {centre.rating && (
-                                <span className="center-rating-chip">⭐ {centre.rating}</span>
-                              )}
-                            </div>
-                            <div className="center-availability-pill">
-                              <span className="center-availability-slots">{slotText}</span>
-                              <span className="center-availability-date">{formatDateDisplay(selectedDate)}</span>
-                            </div>
+                      <div className="center-main-row">
+                        <div className="center-icon">🏢</div>
+                        <div className="center-info">
+                          <div className="center-title-row">
+                            <h3>{centre.name}</h3>
+                            {centre.rating && (
+                              <p className="center-rating">⭐ {centre.rating}</p>
+                            )}
                           </div>
-
                           {renderCentreLocation(centre)}
-
-                          <p className="center-address">{centre.address}</p>
-
-                          <div className="center-card-footer">
-                            {priceText ? (
-                              <div className="center-price-block">
-                                <span className="center-price-label">Starts at</span>
-                                <span className="center-price-chip">{priceText}</span>
-                              </div>
-                            ) : <span />}
-                            <span className="center-select-hint">Select →</span>
-                          </div>
                         </div>
-                      );
-                    });
-                  })()
+                      </div>
+
+                      <p className="center-address">{centre.address}</p>
+
+                      <button
+                        type="button"
+                        className="center-price-details-btn"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openPriceDetails(centre);
+                        }}
+                      >
+                        ₹ Price details
+                      </button>
+                    </div>
+                  ))
                 ) : (
                   <div className="no-centres-message no-centres-message-overlay">
-                    No service centres found in {selectedArea}
+                    {isHomeService
+                      ? `No home-service centres available within ${HOME_SERVICE_RADIUS_KM} km of ${selectedArea}`
+                      : `No service centres found in ${selectedArea}`}
                   </div>
                 )}
               </div>
@@ -574,6 +682,61 @@ const SelectCenter = () => {
         >
           Continue with {selectedCentre.name}
         </button>
+      )}
+
+      {priceModalCentre && (
+        <div
+          className="price-details-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={closePriceDetails}
+        >
+          <div className="price-details-modal" onClick={(e) => e.stopPropagation()}>
+            <header className="price-details-modal-header">
+              <div>
+                <h3>{priceModalCentre.name}</h3>
+                <p className="price-details-modal-subtitle">
+                  {isHomeService ? 'Home service prices' : 'Service centre prices'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="price-details-modal-close"
+                onClick={closePriceDetails}
+                aria-label="Close price details"
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="price-details-modal-body">
+              {priceModalLoading && <p className="price-details-loading">Loading prices…</p>}
+              {!priceModalLoading && priceModalError && (
+                <p className="price-details-error">{priceModalError}</p>
+              )}
+              {!priceModalLoading && !priceModalError && priceModalRows.length > 0 && (
+                <table className="price-details-table">
+                  <thead>
+                    <tr>
+                      <th>Vehicle</th>
+                      <th>Wash</th>
+                      <th>Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {priceModalRows.map((row, idx) => (
+                      <tr key={`${row.carType}-${row.washType}-${idx}`}>
+                        <td>{row.carType}</td>
+                        <td>{row.washType}</td>
+                        <td>{row.currency === 'INR' ? '₹' : `${row.currency} `}{row.price}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       <BottomNav active="none" />

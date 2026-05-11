@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import PaymentMethodModal from '../components/PaymentMethodModal';
-import { readBookingsCache, writeBookingsCache } from '../utils/bookingsCache';
+import { readBookingsCache, writeBookingsCache, readBookingsCacheEntry, readStaleBookingsCache } from '../utils/bookingsCache';
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
-import { OrdersListSkeleton, useDelayedFlag, LoadingAnnouncer } from '../components/Skeleton';
+import { fetchWithTimeout } from '../utils/api';
 import '../styles/Orders.css';
 
 const Orders = () => {
@@ -13,7 +13,6 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [visibleOrdersCount, setVisibleOrdersCount] = useState(ORDERS_BATCH_SIZE);
   const [loading, setLoading] = useState(true);
-  const showLoadingSkeleton = useDelayedFlag(loading, 150);
   const [error, setError] = useState('');
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
   const [upgradeOrder, setUpgradeOrder] = useState(null);
@@ -59,26 +58,33 @@ const Orders = () => {
     }
 
     if (!forceRefresh) {
-      const cachedOrders = readBookingsCache();
-      if (cachedOrders) {
-        setOrders(cachedOrders);
+      // Render fresh cache instantly and skip the network call.
+      const cached = readBookingsCacheEntry();
+      if (cached?.data && !cached.isStale) {
+        setOrders(cached.data);
         setError('');
         setLoading(false);
         return;
       }
+      // Stale cache: still show it immediately, then revalidate in background.
+      if (cached?.data) {
+        setOrders(cached.data);
+        setError('');
+        setLoading(false);
+      }
     }
-    
+
     try {
       const headers = withAuthHeader({
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       });
 
-      const response = await fetch('/bookings/me', {
+      const response = await fetchWithTimeout('/bookings/me', {
         method: 'GET',
         mode: 'cors',
         headers: headers
-      });
+      }, 10000);
 
       const contentType = response.headers.get('content-type') || '';
       const responseText = await response.text();
@@ -95,17 +101,31 @@ const Orders = () => {
         if (response.status === 403) {
           setNotLoggedIn(true);
         } else {
-          const errMsg = (parsed && parsed.message) || 'Failed to fetch orders';
-          if (errMsg.toLowerCase().includes('phone')) {
-            setNoPhone(true);
+          // Backend slow / 504 — fall back to stale cache rather than blanking.
+          const stale = readStaleBookingsCache();
+          if (stale && stale.length) {
+            setOrders(stale);
+            setError('');
           } else {
-            setError(errMsg);
+            const errMsg = (parsed && parsed.message) || 'Failed to fetch orders';
+            if (errMsg.toLowerCase().includes('phone')) {
+              setNoPhone(true);
+            } else {
+              setError(errMsg);
+            }
           }
         }
       }
     } catch (err) {
-      setError('Network error. Please check your connection.');
-      console.error('Fetch Orders Error:', err);
+      // Network error / timeout — fall back to stale cache.
+      const stale = readStaleBookingsCache();
+      if (stale && stale.length) {
+        setOrders(stale);
+        setError('');
+      } else {
+        setError('Network error. Please check your connection.');
+      }
+      console.warn('Fetch Orders Error:', err?.name || err);
     } finally {
       setLoading(false);
     }
@@ -372,12 +392,7 @@ const Orders = () => {
 
       {/* Orders List */}
       <div className="orders-list">
-        {loading && (
-          <>
-            <LoadingAnnouncer label="Loading orders" />
-            {showLoadingSkeleton && <OrdersListSkeleton count={4} />}
-          </>
-        )}
+        {loading && <p className="loading-message">Loading orders...</p>}
         {!loading && notLoggedIn && (
           <div className="orders-login-prompt">
             <div className="orders-login-icon">🎉</div>

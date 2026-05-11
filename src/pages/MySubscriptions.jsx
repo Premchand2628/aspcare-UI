@@ -4,7 +4,6 @@ import BottomNav from '../components/BottomNav';
 import { clearAuthSession, getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import { readSubscriptionsCache, writeSubscriptionsCache } from '../utils/subscriptionsCache';
 import '../styles/MySubscriptions.css';
-import { SubscriptionsListSkeleton, useDelayedFlag, LoadingAnnouncer } from '../components/Skeleton';
 
 const formatCurrency = (value) => {
   const amount = Number(value || 0);
@@ -45,7 +44,6 @@ function MySubscriptions() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const showLoadingSkeleton = useDelayedFlag(loading, 150);
   const [error, setError] = useState('');
   const [expandedRowId, setExpandedRowId] = useState(null);
   const [notLoggedIn, setNotLoggedIn] = useState(false);
@@ -130,12 +128,7 @@ function MySubscriptions() {
       </header>
       <div className="subscriptions-strip-line" />
 
-      {loading && (
-        <>
-          <LoadingAnnouncer label="Loading subscriptions" />
-          {showLoadingSkeleton && <SubscriptionsListSkeleton count={2} />}
-        </>
-      )}
+      {loading && <p className="subscriptions-state">Loading subscriptions...</p>}
       {!loading && notLoggedIn && (
         <div className="subscriptions-login-prompt">
           <div className="subscriptions-login-icon">�</div>

@@ -19,30 +19,6 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [react()],
     appType: 'spa',
-    build: {
-      // Do not ship source maps to prod (leaks original JSX).
-      sourcemap: false,
-      // Strip console.* + debugger statements from the prod bundle.
-      // Use esbuild minifier (bundled with Vite, no extra dep).
-      minify: 'esbuild',
-      // Code-split heavy dependencies so a first paint does not pull everything.
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom'],
-            'router-vendor': ['react-router-dom'],
-            'oauth-vendor': ['@react-oauth/google']
-          }
-        }
-      },
-      chunkSizeWarningLimit: 600
-    },
-    esbuild: {
-      // Remove console.log/debug/info and debugger from production builds.
-      // console.error/warn are kept so true failures remain visible.
-      drop: command === 'build' ? ['debugger'] : [],
-      pure: command === 'build' ? ['console.log', 'console.debug', 'console.info'] : []
-    },
     server: {
       host: true,
       port: devPort,

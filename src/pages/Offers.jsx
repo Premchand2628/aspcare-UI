@@ -6,7 +6,6 @@ import { getStoredPhone, toApiServiceType, toApiWaterProvidedFlag, toUiServiceTy
 import { clearAuthSession, getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import { readDealPricesCache, writeDealPricesCache } from '../utils/dealPricesCache';
 import { clearSubscriptionsCache } from '../utils/subscriptionsCache';
-import { OffersListSkeleton, useDelayedFlag, LoadingAnnouncer } from '../components/Skeleton';
 import '../styles/Offers.css';
 
 const Offers = () => {
@@ -25,7 +24,6 @@ const Offers = () => {
     return preselectedCarType;
   });
   const [loading, setLoading] = useState(true);
-  const showLoadingSkeleton = useDelayedFlag(loading, 150);
   const [error, setError] = useState('');
   const [selectedDealForPay, setSelectedDealForPay] = useState(null);
   const [showWaterPopup, setShowWaterPopup] = useState(false);
@@ -48,7 +46,6 @@ const Offers = () => {
   const [pendingDeal, setPendingDeal] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentDeal, setPaymentDeal] = useState(null);
-  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   const CAR_TYPES = ['Hatchback', 'Sedan', 'SUV', 'MPV', 'Pickup'];
 
@@ -97,9 +94,14 @@ const Offers = () => {
       let data = Array.isArray(cachedDeals) ? cachedDeals : null;
 
       if (!data) {
+        const headers = withAuthHeader({
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        });
+
         const response = await fetch('/deal-prices', {
           method: 'GET',
-          headers: withAuthHeader({ Accept: 'application/json' })
+          headers: headers
         });
 
         if (!response.ok) {
@@ -343,11 +345,6 @@ const Offers = () => {
   };
 
   const handlePayNow = (deal) => {
-    // Require login before payment
-    if (!getValidatedAuthToken()) {
-      setShowLoginPopup(true);
-      return;
-    }
     // Check if user has a phone number (OAuth users may not)
     const phone = getStoredPhone();
     if (!phone) {
@@ -388,7 +385,7 @@ const Offers = () => {
       });
       const data = await res.json();
       setPhoneIsNew(!data.exists);
-      setPhoneExistingEmail('');
+      setPhoneExistingEmail(data.email || '');
       setPhoneStep('confirm');
     } catch {
       setPhoneError('Unable to verify phone. Please try again.');
@@ -549,12 +546,7 @@ const Offers = () => {
       </header>
 
       {/* Loading State */}
-      {loading && (
-        <>
-          <LoadingAnnouncer label="Loading offers" />
-          {showLoadingSkeleton && <OffersListSkeleton count={4} />}
-        </>
-      )}
+      {loading && <p className="loading-message">Loading offers...</p>}
 
       {/* Error State */}
       {error && <p className="error-message">{error}</p>}
@@ -569,7 +561,7 @@ const Offers = () => {
               <button
                 key={carType}
                 type="button"
-                className={`offer-category-card cat-${carType.toLowerCase()}`}
+                className="offer-category-card"
                 onClick={() => {
                   setSelectedCarType(carType);
                   setPriceSort('');
@@ -578,15 +570,13 @@ const Offers = () => {
                 }}
               >
                 <div className="offer-category-cap">
-                  <img className="offer-category-icon" src={getDealImageByCarType(carType)} alt="" />
                   <div className="offer-category-title">{carType}</div>
                 </div>
                 <div className="offer-category-body">
                   <div className="offer-category-extra">
-                    <span className="offer-category-extra-label">Save upto</span>
-                    <span className="offer-category-extra-pill">{getTopDiscountForCarType(carType)}%</span>
+                    Get upto <span className="offer-category-extra-pill">{getTopDiscountForCarType(carType)}%</span> off
                   </div>
-                  <div className="offer-category-note">More washes, more gifts 🎁</div>
+                  <div className="offer-category-note">increase your drops to get additional gifts</div>
                   <div className="offer-category-cta">Tap to explore</div>
                 </div>
               </button>
@@ -598,13 +588,10 @@ const Offers = () => {
       {!loading && !error && selectedCarType && (
         <div className="deals-view">
           <div className="deals-grid">
-            {dealsToDisplay.map((deal, index) => {
-              const washKey = normalizeWashType(deal.washType).toLowerCase().replace(/\+/g, '-');
-              const savings = Math.max(0, Math.round(Number(deal.originalPrice || 0) - Number(deal.discountedPrice || 0)));
-              return (
+            {dealsToDisplay.map((deal, index) => (
               <div
                 key={deal.id}
-                className={`deal-detail-card wash-${washKey} ${!deal.available ? 'missing' : ''} ${selectedDealId === deal.id ? 'selected' : ''}`}
+                className={`deal-detail-card ${!deal.available ? 'missing' : ''} ${selectedDealId === deal.id ? 'selected' : ''}`}
                 onClick={() => {
                   if (!deal.available) return;
                   setSelectedDealId(deal.id);
@@ -630,9 +617,6 @@ const Offers = () => {
                     <div className="deal-card-pricing">
                       <span className="deal-original-price">₹{Math.round(deal.originalPrice)}</span>
                       <span className="deal-final-price">₹{Math.round(deal.discountedPrice)}/-</span>
-                      {savings > 0 && (
-                        <span className="deal-savings">You save ₹{savings}</span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -648,8 +632,7 @@ const Offers = () => {
                   </label>
                 )}
               </div>
-              );
-            })}
+            ))}
           </div>
 
           {selectedDeal && selectedDeal.available && (
@@ -755,7 +738,7 @@ const Offers = () => {
                 <p className="phone-link-desc">
                   {phoneIsNew
                     ? 'Get a signup bonus of ₹20 off on your first booking!'
-                    : `${phoneInput} is already registered. Do you wish to continue?`
+                    : `${phoneInput} is already registered with ${phoneExistingEmail}. Do you wish to continue?`
                   }
                 </p>
                 {otpError && <p className="phone-link-error">{otpError}</p>}
@@ -806,22 +789,6 @@ const Offers = () => {
                 </button>
               </>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Login Popup */}
-      {showLoginPopup && (
-        <div className="modal-overlay" onClick={() => setShowLoginPopup(false)}>
-          <div className="offers-login-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="offers-login-popup-icon">🔐</div>
-            <h3 className="offers-login-popup-title">Please Login / Signup</h3>
-            <p className="offers-login-popup-desc">to purchase this subscription</p>
-            <div className="offers-login-popup-actions">
-              <button className="offers-login-popup-btn login" onClick={() => { setShowLoginPopup(false); navigate('/login', { state: { mode: 'login', from: { pathname: '/offers' } } }); }}>Login</button>
-              <button className="offers-login-popup-btn signup" onClick={() => { setShowLoginPopup(false); navigate('/login', { state: { mode: 'signup', from: { pathname: '/offers' } } }); }}>Signup</button>
-            </div>
-            <button className="offers-login-popup-close" onClick={() => setShowLoginPopup(false)}>Maybe later</button>
           </div>
         </div>
       )}
