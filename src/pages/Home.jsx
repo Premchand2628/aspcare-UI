@@ -1,20 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import {
-  writeBookingsCache,
-  writeActiveMembershipCache,
-  readBookingsCacheEntry,
-  readStaleBookingsCache
-} from '../utils/bookingsCache';
+import { writeBookingsCache, writeActiveMembershipCache } from '../utils/bookingsCache';
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
-import {
-  readDealPricesCacheEntry,
-  readStaleDealPricesCache,
-  writeDealPricesCache
-} from '../utils/dealPricesCache';
-import { fetchWithTimeout } from '../utils/api';
+import { readDealPricesCache, writeDealPricesCache } from '../utils/dealPricesCache';
+import { readServicesCache, writeServicesCache } from '../utils/servicesCache';
 import '../styles/Home.css';
+import { HomePageSkeleton, useMountSkeleton, LoadingAnnouncer } from '../components/Skeleton';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -40,15 +32,14 @@ const Home = () => {
   const [washCarouselIndex, setWashCarouselIndex] = useState(0);
   const [washSlides, setWashSlides] = useState([]);
   const [servicePopupCar, setServicePopupCar] = useState(null);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
   const touchStartXRef = useRef(null);
   const washTouchStartXRef = useRef(null);
   const didFetchRef = useRef(false);
   const hasActiveMembership = Boolean(membership);
   const DEAL_CAR_TYPES = ['Hatchback', 'Sedan', 'SUV', 'Pickup'];
 
-  // Every service type now goes through /select-center first so the user can
-  // pick an area / centre that actually offers that service (the centre's
-  // boolean flags decide which centres are eligible — see SelectCenter.jsx).
+  // All service tiles route through /select-center; apiServiceType drives the centre filter.
   const SERVICE_CONFIG = {
     centre:  { className: 'center',  image: '/images/suv.png',       path: '/select-center', apiServiceType: 'SERVICE_CENTRE' },
     home:    { className: 'home',    image: '/images/sedan.png',     path: '/select-center', apiServiceType: 'HOME' },
@@ -92,95 +83,83 @@ const Home = () => {
     return '/images/hatchback.png';
   };
 
+  const buildSlidesFromServices = (data) => (Array.isArray(data) ? data : []).map((s) => {
+    const config = SERVICE_CONFIG[s.serviceType] || {};
+    return {
+      id: s.serviceType,
+      className: config.className || s.serviceType,
+      offer: `${Math.round(s.discountPercentage)}% Off`,
+      label: s.displayName,
+      icon: s.icon || '',
+      cta: 'view details →',
+      image: config.image || '/images/hatchback.png',
+      onClick: () => navigate(config.path || '/booking', {
+        state: { serviceType: config.apiServiceType || s.serviceType }
+      }),
+    };
+  });
+
   const fetchServices = async () => {
+    // 1) Render instantly from cache
+    const cached = readServicesCache();
+    if (cached) setWashSlides(buildSlidesFromServices(cached));
+
+    // 2) Revalidate in background (stale-while-revalidate)
     try {
       const response = await fetch('/services');
       if (!response.ok) return;
       const data = await response.json();
-      const slides = data.map((s) => {
-        const config = SERVICE_CONFIG[s.serviceType] || {};
-        return {
-          id: s.serviceType,
-          className: config.className || s.serviceType,
-          offer: `${Math.round(s.discountPercentage)}% Off`,
-          label: s.displayName,
-          icon: s.icon || '',
-          cta: 'view details →',
-          image: config.image || '/images/hatchback.png',
-          onClick: () => navigate(config.path || '/booking', {
-            state: { serviceType: config.apiServiceType || s.serviceType }
-          }),
-        };
-      });
-      setWashSlides(slides);
+      writeServicesCache(Array.isArray(data) ? data : []);
+      setWashSlides(buildSlidesFromServices(data));
     } catch {
-      // keep washSlides empty on error
+      // keep cached / empty on error
     }
-  };
-
-  const renderDealCards = (data) => {
-    const mapped = DEAL_CAR_TYPES.map((carType) => {
-      const prices = (Array.isArray(data) ? data : [])
-        .filter((deal) => normalizeCarType(deal?.dealCarType) === carType)
-        .map((deal) => Number(deal?.dealFinalPrice))
-        .filter((value) => Number.isFinite(value) && value > 0);
-      const lowestPrice = prices.length ? Math.min(...prices) : null;
-      return {
-        carType,
-        lowestPrice,
-        className: carType.toLowerCase(),
-        image: getDealImageByCarType(carType)
-      };
-    }).filter((item) => item.lowestPrice !== null);
-    setDealCards(mapped);
-    setDealCarouselIndex(0);
   };
 
   const fetchDealCards = async () => {
-    // 1. Render whatever we have in cache immediately so the UI never blanks
-    //    out waiting on a slow /deal-prices call.
-    const cached = readDealPricesCacheEntry();
-    if (cached?.data) {
-      renderDealCards(cached.data);
-      setDealsLoading(false);
-      // Fresh cache => skip network entirely on this render.
-      if (!cached.isStale) return;
-    } else {
-      setDealsLoading(true);
-    }
-
-    // 2. Background revalidate (with timeout so a 504 doesn't hang the page).
+    setDealsLoading(true);
     try {
-      const headers = withAuthHeader({
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      });
+      const cachedDeals = readDealPricesCache();
+      const sourceDeals = Array.isArray(cachedDeals) ? cachedDeals : null;
 
-      const response = await fetchWithTimeout('/deal-prices', {
-        method: 'GET',
-        headers
-      }, 8000);
+      let data = sourceDeals;
 
-      if (!response.ok) {
-        // Backend slow / 504 — keep showing whatever we already rendered from cache.
-        if (!cached?.data) {
-          const stale = readStaleDealPricesCache();
-          if (stale) renderDealCards(stale);
-          else setDealCards([]);
+      if (!data) {
+        const response = await fetch('/deal-prices', {
+          method: 'GET',
+          headers: withAuthHeader({ Accept: 'application/json' })
+        });
+
+        if (!response.ok) {
+          setDealCards([]);
+          return;
         }
-        return;
+
+        data = await response.json();
+        writeDealPricesCache(Array.isArray(data) ? data : []);
       }
 
-      const data = await response.json();
-      writeDealPricesCache(Array.isArray(data) ? data : []);
-      renderDealCards(data);
+      const mapped = DEAL_CAR_TYPES.map((carType) => {
+        const prices = (Array.isArray(data) ? data : [])
+          .filter((deal) => normalizeCarType(deal?.dealCarType) === carType)
+          .map((deal) => Number(deal?.dealFinalPrice))
+          .filter((value) => Number.isFinite(value) && value > 0);
+
+        const lowestPrice = prices.length ? Math.min(...prices) : null;
+
+        return {
+          carType,
+          lowestPrice,
+          className: carType.toLowerCase(),
+          image: getDealImageByCarType(carType)
+        };
+      }).filter((item) => item.lowestPrice !== null);
+
+      setDealCards(mapped);
+      setDealCarouselIndex(0);
     } catch (error) {
-      console.warn('deal-prices fetch failed, using cache:', error?.name || error);
-      if (!cached?.data) {
-        const stale = readStaleDealPricesCache();
-        if (stale) renderDealCards(stale);
-        else setDealCards([]);
-      }
+      console.error('Error fetching deal cards:', error);
+      setDealCards([]);
     } finally {
       setDealsLoading(false);
     }
@@ -305,63 +284,49 @@ const Home = () => {
     navigate('/orders');
   };
 
-  const computeUpgradeable = (data) => {
-    if (!Array.isArray(data)) return null;
-    const now = new Date();
-    return data.find(order => {
-      if (!order.bookingDate || !order.timeSlot) return false;
-      try {
-        const bookingDateTime = new Date(`${order.bookingDate}T${order.timeSlot.split('-')[0]}`);
-        const isFuture = bookingDateTime > now;
-        const isCancelled = String(order.status || '').toLowerCase() === 'cancelled';
-        return isFuture && !isCancelled;
-      } catch {
-        return false;
-      }
-    }) || null;
-  };
-
-  const applyBookingsToUi = (data) => {
-    setHasBookings(Array.isArray(data) && data.length > 0);
-    setUpgradeableBooking(computeUpgradeable(data));
-  };
-
   const fetchUpcomingBookings = async () => {
     try {
       const authToken = getValidatedAuthToken();
       if (!authToken) return;
+      const headers = withAuthHeader({
+        'Accept': 'application/json'
+      });
 
-      // 1. Render from cache first so the page never blocks on /bookings/me.
-      const cached = readBookingsCacheEntry();
-      if (cached?.data) {
-        applyBookingsToUi(cached.data);
-        if (!cached.isStale) return;
-      }
-
-      const headers = withAuthHeader({ 'Accept': 'application/json' });
-
-      // 2. Background refresh with timeout.
-      const response = await fetchWithTimeout('/bookings/me', {
+      const response = await fetch('/bookings/me', {
         method: 'GET',
         headers
-      }, 8000);
+      });
 
       if (!response.ok) {
-        // Backend slow / 504 — keep stale cache on screen.
-        if (!cached?.data) {
-          const stale = readStaleBookingsCache();
-          if (stale) applyBookingsToUi(stale);
-        }
-        return;
+        throw new Error('Failed to fetch bookings');
       }
 
       const data = await response.json();
       writeBookingsCache(data);
-      applyBookingsToUi(data);
+      
+      // Track if user has any bookings
+      setHasBookings(data && data.length > 0);
+      
+      // Find any upcoming (future, non-cancelled) booking for upgrade banner
+      const now = new Date();
+      const upgradeable = data.find(order => {
+        if (!order.bookingDate || !order.timeSlot) return false;
+        
+        try {
+          const bookingDateTime = new Date(`${order.bookingDate}T${order.timeSlot.split('-')[0]}`);
+          const isFuture = bookingDateTime > now;
+          const isCancelled = String(order.status || '').toLowerCase() === 'cancelled';
+          
+          return isFuture && !isCancelled;
+        } catch {
+          return false;
+        }
+      });
+
+      setUpgradeableBooking(upgradeable || null);
     } catch (error) {
-      console.warn('bookings fetch failed, using cache:', error?.name || error);
-      const stale = readStaleBookingsCache();
-      if (stale) applyBookingsToUi(stale);
+      console.error('Error fetching bookings:', error);
+      setHasBookings(false);
     }
   };
 
@@ -425,7 +390,8 @@ const Home = () => {
     try {
       const phone = localStorage.getItem('userPhone');
       if (!phone) {
-        alert('Please login first');
+        setShowLoginPopup(true);
+        setCouponLoading(false);
         return;
       }
 
@@ -475,6 +441,16 @@ const Home = () => {
   };
 
   const isLoggedIn = Boolean(getValidatedAuthToken());
+  const showMountSkeleton = useMountSkeleton(180);
+
+  if (showMountSkeleton) {
+    return (
+      <div className="page-container home-page">
+        <LoadingAnnouncer label="Loading home" />
+        <HomePageSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="page-container home-page">
@@ -520,7 +496,7 @@ const Home = () => {
               className="service-popup-card service-popup-home"
               onClick={() => {
                 setServicePopupCar(null);
-                navigate('/booking', { state: { serviceType: 'HOME', prefilledCarType: servicePopupCar } });
+                navigate('/select-center', { state: { serviceType: 'HOME', prefilledCarType: servicePopupCar } });
               }}
             >
               <img className="service-popup-car-img" src="/images/sedan.png" alt="Home" />
@@ -600,7 +576,7 @@ const Home = () => {
       <section className="home-section">
         <h2 className="section-title">Perks <span>→</span></h2>
         <div className="perk-grid">
-          <button className="perk-card" onClick={() => navigate('/referral-details')}>
+          <button className="perk-card" onClick={() => isLoggedIn ? navigate('/referral-details') : setShowLoginPopup(true)}>
             <div className="perk-icon">👥➕</div>
             <p>Invite referrals</p>
           </button>
@@ -698,6 +674,22 @@ const Home = () => {
           {couponCode && <p className="coupon-code-display">Code: {couponCode}</p>}
         </div>
       </div>
+
+      {/* Login Popup */}
+      {showLoginPopup && (
+        <div className="modal-overlay" onClick={() => setShowLoginPopup(false)}>
+          <div className="home-login-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="home-login-popup-icon">🔐</div>
+            <h3 className="home-login-popup-title">Please Login / Signup</h3>
+            <p className="home-login-popup-desc">to invite friends and earn rewards</p>
+            <div className="home-login-popup-actions">
+              <button className="home-login-popup-btn login" onClick={() => { setShowLoginPopup(false); navigate('/login', { state: { mode: 'login', from: { pathname: '/' } } }); }}>Login</button>
+              <button className="home-login-popup-btn signup" onClick={() => { setShowLoginPopup(false); navigate('/login', { state: { mode: 'signup', from: { pathname: '/' } } }); }}>Signup</button>
+            </div>
+            <button className="home-login-popup-close" onClick={() => setShowLoginPopup(false)}>Maybe later</button>
+          </div>
+        </div>
+      )}
 
       {/* Floating Chatbot Bubble */}
       <button 

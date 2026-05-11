@@ -62,7 +62,14 @@ const Review = () => {
   };
   const isSubscriptionRedeemed = Boolean(bookingData.subscriptionRedeemed) || useExistingSub === 'yes';
   const resolvedServiceType = toApiServiceType(bookingData.serviceType || (bookingData.centreName && bookingData.centreName !== 'Home' ? 'SELF_DRIVE' : 'HOME'));
-  const isHomeService = resolvedServiceType === 'HOME';
+  const rawServiceType = (() => {
+    const raw = String(bookingData.rawServiceType || bookingData.serviceType || '').trim().toUpperCase().replace(/\s+/g, '_');
+    if (raw === 'SERVICE_CENTRE' || raw === 'SERVICE_CENTER' || raw === 'CENTRE' || raw === 'CENTER') return 'SERVICE_CENTRE';
+    if (raw === 'SELFDRIVE' || raw === 'SELF_DRIVE') return 'SELF_DRIVE';
+    if (bookingData.serviceCentreId || (bookingData.centreName && String(bookingData.centreName).trim() && String(bookingData.centreName).trim().toLowerCase() !== 'home')) return 'SERVICE_CENTRE';
+    return resolvedServiceType;
+  })();
+  const isHomeService = rawServiceType === 'HOME';
 
   // Format date for display
   const formatDateForDisplay = (date) => {
@@ -903,35 +910,46 @@ const Review = () => {
 
       {/* Booking Details */}
       <div className="booking-info">
-        <div className="booking-row">
-          <span className="booking-label">Service</span>
-          <span className="booking-separator">:</span>
-          <span className="booking-value">{isHomeService ? '@Home' : '@Centre'}</span>
+        <div className="booking-info-header">
+          <span className="booking-info-title">Booking Summary</span>
+          <span className={`booking-mode-pill ${rawServiceType === 'HOME' ? 'home' : (rawServiceType === 'SERVICE_CENTRE' ? 'service-centre' : 'centre')}`}>
+            {rawServiceType === 'HOME' ? '🏠 @Home' : (rawServiceType === 'SERVICE_CENTRE' ? '🏢 @Service Centre' : '🏢 @Centre')}
+          </span>
         </div>
         <div className="booking-row">
-          <span className="booking-label">Wash Type</span>
-          <span className="booking-separator">:</span>
-          <span className="booking-value">{bookingData.washType}</span>
+          <span className="booking-icon">{'🧴'}</span>
+          <div className="booking-label-value">
+            <span className="booking-label">Wash Type</span>
+            <span className="booking-value">{bookingData.washType}</span>
+          </div>
         </div>
         <div className="booking-row">
-          <span className="booking-label">Vehicle</span>
-          <span className="booking-separator">:</span>
-          <span className="booking-value">{bookingData.vehicleType}</span>
+          <span className="booking-icon">{'🚗'}</span>
+          <div className="booking-label-value">
+            <span className="booking-label">Vehicle</span>
+            <span className="booking-value">{bookingData.vehicleType}</span>
+          </div>
         </div>
         <div className="booking-row">
-          <span className="booking-label">Vehicle Number</span>
-          <span className="booking-separator">:</span>
-          <span className="booking-value">{bookingData.vehicleNumber}</span>
+          <span className="booking-icon">{'🔢'}</span>
+          <div className="booking-label-value">
+            <span className="booking-label">Vehicle No.</span>
+            <span className="booking-value">{bookingData.vehicleNumber}</span>
+          </div>
+        </div>
+        <div className="booking-row booking-row-multiline">
+          <span className="booking-icon">{'📍'}</span>
+          <div className="booking-label-value">
+            <span className="booking-label">Address</span>
+            <span className="booking-value">{bookingData.address}</span>
+          </div>
         </div>
         <div className="booking-row">
-          <span className="booking-label">Address</span>
-          <span className="booking-separator">:</span>
-          <span className="booking-value">{bookingData.address}</span>
-        </div>
-        <div className="booking-row">
-          <span className="booking-label">Date</span>
-          <span className="booking-separator">:</span>
-          <span className="booking-value">{formatDateForDisplay(bookingData.selectedDate)}</span>
+          <span className="booking-icon">{'📅'}</span>
+          <div className="booking-label-value">
+            <span className="booking-label">Date</span>
+            <span className="booking-value booking-value-accent">{formatDateForDisplay(bookingData.selectedDate)}</span>
+          </div>
         </div>
       </div>
 

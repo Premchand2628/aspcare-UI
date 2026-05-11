@@ -32,13 +32,31 @@ const SERVICE_TYPE_META = {
 // Map service type -> the centre boolean flag(s) that must be true for the
 // centre to be eligible. `center_both=true` means the centre offers both
 // SERVICE_CENTRE and HOME, so it's eligible for either.
+//
+// Backwards-compat: if the centre row has NONE of the new flag fields at all
+// (legacy data, backend not yet migrated), assume it offers HOME and
+// SERVICE_CENTRE. TEFLON / ASPCARE are kept strict (opt-in only) because
+// silently treating every centre as Teflon-capable would be wrong.
 const centreOffersServiceType = (centre, type) => {
   if (!centre) return false;
-  const both = Boolean(centre.center_both ?? centre.centerBoth);
-  if (type === 'HOME')           return both || Boolean(centre.center_home    ?? centre.centerHome);
-  if (type === 'SERVICE_CENTRE') return both || Boolean(centre.center_service ?? centre.centerService);
-  if (type === 'TEFLON')         return Boolean(centre.center_teflon ?? centre.centerTeflon);
-  if (type === 'ASPCARE')        return Boolean(centre.center_asp    ?? centre.centerAsp);
+  const homeFlag    = centre.center_home    ?? centre.centerHome;
+  const serviceFlag = centre.center_service ?? centre.centerService;
+  const bothFlag    = centre.center_both    ?? centre.centerBoth;
+  const teflonFlag  = centre.center_teflon  ?? centre.centerTeflon;
+  const aspFlag     = centre.center_asp     ?? centre.centerAsp;
+
+  const noFlagsPresent =
+    homeFlag === undefined &&
+    serviceFlag === undefined &&
+    bothFlag === undefined &&
+    teflonFlag === undefined &&
+    aspFlag === undefined;
+
+  const both = Boolean(bothFlag);
+  if (type === 'HOME')           return noFlagsPresent || both || Boolean(homeFlag);
+  if (type === 'SERVICE_CENTRE') return noFlagsPresent || both || Boolean(serviceFlag);
+  if (type === 'TEFLON')         return Boolean(teflonFlag);
+  if (type === 'ASPCARE')        return Boolean(aspFlag);
   return true;
 };
 
@@ -128,6 +146,24 @@ const getCentreMapsUrl = (centre) => {
   if (!raw) return null;
   if (/^https?:\/\//i.test(raw)) return raw;
   return `https://${raw}`;
+};
+
+const VEHICLE_META = {
+  BIKE:      { icon: '🏍️', label: 'Bike',      color: '#6a1b9a', bg: '#f3e5f5' },
+  HATCHBACK: { icon: '🚗', label: 'Hatchback', color: '#1565c0', bg: '#e3f2fd' },
+  SEDAN:     { icon: '🚙', label: 'Sedan',     color: '#00695c', bg: '#e0f2f1' },
+  SUV:       { icon: '🛻', label: 'SUV',       color: '#e65100', bg: '#fff3e0' },
+  MPV:       { icon: '🚐', label: 'MPV',       color: '#4527a0', bg: '#ede7f6' },
+  PICKUP:    { icon: '🚚', label: 'Pickup',    color: '#4e342e', bg: '#efebe9' },
+  TRUCK:     { icon: '🚛', label: 'Truck',     color: '#37474f', bg: '#eceff1' },
+};
+
+const formatBasePrice = (centre) => {
+  const raw = centre?.basePrice ?? centre?.base_price;
+  if (raw === null || raw === undefined || raw === '') return '';
+  const num = Number(raw);
+  if (!Number.isFinite(num)) return '';
+  return Number.isInteger(num) ? `₹${num}` : `₹${num.toFixed(2)}`;
 };
 
 const SelectCenter = () => {
@@ -235,15 +271,12 @@ const SelectCenter = () => {
   // radius for HOME). Once the backend honours `serviceType` + `lat/lng` these
   // become no-ops because the list will already be correct.
   const applyClientSideFilters = (list) => {
-    let filtered = (list || []).filter((c) => centreOffersServiceType(c, serviceType));
-    if (isHomeService && userLocation) {
-      filtered = filtered.filter((c) => {
-        const coords = extractCoordinatesFromCentre(c);
-        if (!coords) return false;
-        return calculateDistanceKm(userLocation, coords) <= HOME_SERVICE_RADIUS_KM;
-      });
-    }
-    return filtered;
+    // Only filter by the service-type capability flag. The 10 km HOME radius
+    // check is intentionally NOT enforced here: the user has explicitly chosen
+    // an area, and the backend already applies a radius filter server-side
+    // when lat/lng/radiusKm are passed. Re-applying it client-side hides
+    // centres in areas the user manually selected away from their GPS spot.
+    return (list || []).filter((c) => centreOffersServiceType(c, serviceType));
   };
 
   const fetchCentres = async (area) => {
@@ -308,28 +341,26 @@ const SelectCenter = () => {
   };
 
   // ----- Price details modal -----
-  // Tries the new dedicated endpoint first; falls back to a per-(car,wash)
-  // /rates lookup if the dedicated endpoint isn't deployed yet.
+  // Calls GET /rates/centre/{centreId} on the carwashrates service. The
+  // response is a Map<"VEHICLE|WASH", { centreId, vehicleType, washLevel,
+  // amount, currency, source }> — i.e. the full effective price matrix
+  // (default rates + per-centre overrides merged).
   const openPriceDetails = async (centre) => {
     setPriceModalCentre(centre);
     setPriceModalRows([]);
     setPriceModalError('');
     setPriceModalLoading(true);
 
-    // The carwash_service_centre table stores `centre_code`, while
-    // carwash_centre_rate stores the matching value as `rate_center_code`.
-    // Prefer centre_code from the centre row — that's the join key.
-    const rateCode = centre.centre_code || centre.centreCode || centre.rate_center_code || centre.rateCenterCode;
     const centreId = getCentreId(centre);
-    const serviceMode = isHomeService ? 'HOME' : 'SERVICE_CENTRE';
+    if (centreId === null || centreId === undefined) {
+      setPriceModalError('Centre id is missing.');
+      setPriceModalLoading(false);
+      return;
+    }
 
     try {
       const headers = withAuthHeader({ Accept: 'application/json' });
-      const params = new URLSearchParams({ serviceMode });
-      if (rateCode) params.set('rateCenterCode', rateCode);
-      if (centreId !== null && centreId !== undefined) params.set('centreId', String(centreId));
-
-      const response = await fetch(`/rates/centre?${params.toString()}`, {
+      const response = await fetch(`/rates/centre/${encodeURIComponent(String(centreId))}`, {
         method: 'GET',
         headers
       });
@@ -340,14 +371,19 @@ const SelectCenter = () => {
       }
 
       const data = await response.json();
-      const rows = (Array.isArray(data) ? data : data?.rates || [])
+      // data is a Map keyed by "VEHICLE|WASH"; values are CentreRateResponse.
+      const values = Array.isArray(data)
+        ? data
+        : (data && typeof data === 'object' ? Object.values(data) : []);
+
+      const rows = values
         .map((r) => ({
-          carType: r.carType || r.car_type || r.vehicleType,
-          washType: r.washType || r.wash_type || r.washLevel,
-          price: Number(r.price ?? r.amount ?? 0),
+          carType: r.vehicleType || r.carType || r.car_type,
+          washType: r.washLevel || r.washType || r.wash_type,
+          price: Number(r.amount ?? r.price ?? 0),
           currency: r.currency || 'INR'
         }))
-        .filter((r) => r.carType && r.washType && Number.isFinite(r.price));
+        .filter((r) => r.carType && r.washType && Number.isFinite(r.price) && r.price > 0);
 
       if (!rows.length) {
         setPriceModalError('No prices configured for this centre.');
@@ -590,10 +626,6 @@ const SelectCenter = () => {
           <p className="center-filter-note">Check slot availability on preferred date &amp; location</p>
         </div>
 
-        <div className="service-centre-banner">
-          <img src="/images/servicecentre.png" alt="Service Centre" />
-        </div>
-
         {(loadingCentres || selectedArea) && (
           <div className="centers-overlay-layer" ref={centresListRef}>
             {loadingCentres ? (
@@ -603,56 +635,74 @@ const SelectCenter = () => {
             ) : (
               <div className="centers-list centers-list-overlay">
                 {centres.length > 0 ? (
-                  centres.map(centre => (
-                    <div 
-                      key={getCentreKey(centre)} 
-                      className="center-item"
-                      onClick={() => handleSelectCentre(centre)}
-                    >
-                      <div className="center-availability-badge">
-                        <p className="center-availability-title">Availability:</p>
-                        <p className="center-availability-slots">
-                          {(() => {
-                            const slotCount = centreSlotCounts[getCentreKey(centre)];
-                            if (loadingSlotCounts && (slotCount === undefined || slotCount === null)) {
-                              return 'Checking...';
-                            }
-                            if (slotCount === null || slotCount === undefined) {
-                              return '-- slots';
-                            }
-                            return `${slotCount} slots`;
-                          })()}
-                        </p>
-                        <p className="center-availability-date">{formatDateDisplay(selectedDate)}</p>
-                      </div>
-
-                      <div className="center-main-row">
-                        <div className="center-icon">🏢</div>
-                        <div className="center-info">
-                          <div className="center-title-row">
-                            <h3>{centre.name}</h3>
-                            {centre.rating && (
-                              <p className="center-rating">⭐ {centre.rating}</p>
-                            )}
+                  (() => {
+                    const numericPrices = centres
+                      .map(c => Number(c?.basePrice ?? c?.base_price))
+                      .filter(n => Number.isFinite(n) && n > 0);
+                    const minPrice = numericPrices.length ? Math.min(...numericPrices) : null;
+                    const lowestCount = minPrice !== null
+                      ? numericPrices.filter(n => n === minPrice).length
+                      : 0;
+                    return centres.map(centre => {
+                      const slotCount = centreSlotCounts[getCentreKey(centre)];
+                      let slotText;
+                      if (loadingSlotCounts && (slotCount === undefined || slotCount === null)) {
+                        slotText = 'Checking…';
+                      } else if (slotCount === null || slotCount === undefined) {
+                        slotText = '-- slots';
+                      } else {
+                        slotText = `${slotCount} slots`;
+                      }
+                      const priceText = formatBasePrice(centre);
+                      const priceNum = Number(centre?.basePrice ?? centre?.base_price);
+                      const isLowest = minPrice !== null
+                        && numericPrices.length >= 2
+                        && lowestCount === 1
+                        && Number.isFinite(priceNum)
+                        && priceNum === minPrice;
+                      return (
+                        <div
+                          key={getCentreKey(centre)}
+                          className={`center-item${isLowest ? ' is-lowest' : ''}`}
+                          onClick={() => handleSelectCentre(centre)}
+                        >
+                          {isLowest && (
+                            <span className="center-lowest-badge">🏆 Lowest price</span>
+                          )}
+                          <div className="center-card-header">
+                            <div className="center-heading">
+                              <h3 className="center-name">{centre.name}</h3>
+                              {centre.rating && (
+                                <span className="center-rating-chip">⭐ {centre.rating}</span>
+                              )}
+                            </div>
+                            <div className="center-availability-pill">
+                              <span className="center-availability-slots">{slotText}</span>
+                              <span className="center-availability-date">{formatDateDisplay(selectedDate)}</span>
+                            </div>
                           </div>
                           {renderCentreLocation(centre)}
+                          <p className="center-address">{centre.address}</p>
+                          <div className="center-card-footer">
+                            {priceText ? (
+                              <div className="center-price-block">
+                                <span className="center-price-label">Starts at</span>
+                                <span className="center-price-chip">{priceText}</span>
+                              </div>
+                            ) : <span />}
+                            <button
+                              type="button"
+                              className="center-price-details-btn"
+                              onClick={(e) => { e.stopPropagation(); openPriceDetails(centre); }}
+                            >
+                              ₹ Price details
+                            </button>
+                            <span className="center-select-hint">Select →</span>
+                          </div>
                         </div>
-                      </div>
-
-                      <p className="center-address">{centre.address}</p>
-
-                      <button
-                        type="button"
-                        className="center-price-details-btn"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openPriceDetails(centre);
-                        }}
-                      >
-                        ₹ Price details
-                      </button>
-                    </div>
-                  ))
+                      );
+                    });
+                  })()
                 ) : (
                   <div className="no-centres-message no-centres-message-overlay">
                     {isHomeService
@@ -714,26 +764,68 @@ const SelectCenter = () => {
               {!priceModalLoading && priceModalError && (
                 <p className="price-details-error">{priceModalError}</p>
               )}
-              {!priceModalLoading && !priceModalError && priceModalRows.length > 0 && (
-                <table className="price-details-table">
-                  <thead>
-                    <tr>
-                      <th>Vehicle</th>
-                      <th>Wash</th>
-                      <th>Price</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {priceModalRows.map((row, idx) => (
-                      <tr key={`${row.carType}-${row.washType}-${idx}`}>
-                        <td>{row.carType}</td>
-                        <td>{row.washType}</td>
-                        <td>{row.currency === 'INR' ? '₹' : `${row.currency} `}{row.price}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+              {!priceModalLoading && !priceModalError && priceModalRows.length > 0 && (() => {
+                const groups = {};
+                const order = [];
+                priceModalRows.forEach(row => {
+                  const key = String(row.carType || '').trim().toUpperCase();
+                  if (!groups[key]) { groups[key] = []; order.push(key); }
+                  groups[key].push(row);
+                });
+                return (
+                  <div className="price-vehicle-groups">
+                    {order.map(vehicleKey => {
+                      const rows = groups[vehicleKey];
+                      const meta = VEHICLE_META[vehicleKey] || { icon: '🚗', label: vehicleKey, color: '#5e35b1', bg: '#f0ecfa' };
+                      return (
+                        <div key={vehicleKey} className="price-vehicle-card">
+                          <div className="price-vehicle-header" style={{ background: meta.bg, borderColor: meta.color + '55' }}>
+                            <span className="price-vehicle-icon">{meta.icon}</span>
+                            <span className="price-vehicle-label" style={{ color: meta.color }}>{meta.label}</span>
+                          </div>
+                          <div className="price-vehicle-rows">
+                            {rows.map((row, i) => {
+                              const wk = String(row.washType || '').trim().toUpperCase();
+                              const pillClass = wk === 'BASIC' ? 'price-details-wash-basic' : wk === 'FOAM' ? 'price-details-wash-foam' : wk === 'PREMIUM' ? 'price-details-wash-premium' : '';
+                              const sym = row.currency === 'INR' ? '₹' : (row.currency || '₹');
+                              const handlePriceSelect = () => {
+                                closePriceDetails();
+                                navigate('/booking', {
+                                  state: {
+                                    selectedCentre: priceModalCentre,
+                                    serviceType,
+                                    subscription,
+                                    source: location.state?.source || null,
+                                    prefilledCarType: row.carType || vehicleKey,
+                                    prefilledWashType: row.washType,
+                                  }
+                                });
+                              };
+                              return (
+                                <div
+                                  key={i}
+                                  className="price-vehicle-row price-vehicle-row-clickable"
+                                  onClick={handlePriceSelect}
+                                  role="button"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => e.key === 'Enter' && handlePriceSelect()}
+                                >
+                                  <span className={`price-details-wash-pill ${pillClass}`}>{row.washType}</span>
+                                  <div className="price-vehicle-amount">
+                                    <span className="price-details-currency">{sym}</span>
+                                    <span className="price-details-value">{row.price}</span>
+                                    <span className="price-vehicle-select-hint">Book →</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

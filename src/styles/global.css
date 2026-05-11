@@ -378,3 +378,54 @@ button:active {
     font-size: 15px;
   }
 }
+
+@media (min-width: 1024px) {
+  .page-container {
+    max-width: 70%;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  h2 {
+    font-size: 26px;
+  }
+
+  h3 {
+    font-size: 22px;
+  }
+
+  p {
+    font-size: 16px;
+  }
+
+  button {
+    font-size: 16px;
+    padding: 14px 24px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .page-container {
+    max-width: 60%;
+    padding: calc(36px + var(--safe-area-top)) calc(56px + var(--safe-area-right)) calc(100px + var(--safe-area-bottom)) calc(56px + var(--safe-area-left));
+  }
+
+  h1 {
+    font-size: 36px;
+  }
+
+  h2 {
+    font-size: 28px;
+  }
+
+  h3 {
+    font-size: 24px;
+  }
+
+  p {
+    font-size: 17px;
+    line-height: 1.7;
+  }
+}
