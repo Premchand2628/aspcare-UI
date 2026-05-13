@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import PaymentMethodModal from '../components/PaymentMethodModal';
@@ -7,6 +7,7 @@ import { clearAuthSession, getValidatedAuthToken, withAuthHeader } from '../util
 import { readDealPricesCache, writeDealPricesCache } from '../utils/dealPricesCache';
 import { readSubscriptionsCache, writeSubscriptionsCache, clearSubscriptionsCache } from '../utils/subscriptionsCache';
 import '../styles/Review.css';
+import BookingSteps from '../components/BookingSteps';
 
 const Review = () => {
   const navigate = useNavigate();
@@ -435,7 +436,7 @@ const Review = () => {
       if (data.valid) {
         setPromoDiscount(Number(data.discountAmount) || 0);
         setPromoCodeApplied(true);
-        setPromoCodeMessage('✓ Coupon applied successfully!');
+        setPromoCodeMessage('âœ“ Coupon applied successfully!');
       } else {
         setPromoCodeMessage(data.message || 'Invalid promo code');
         setPromoCodeApplied(false);
@@ -791,6 +792,15 @@ const Review = () => {
     }
   };
 
+  const getVehicleIcon = (vehicleType) => {
+    const v = String(vehicleType || '').toUpperCase().replace(/_/g, '');
+    if (v === 'BIKE') return '\u{1F3CD}\uFE0F';
+    if (v === 'PICKUP' || v === 'PICKUPTRUCK') return '\u{1F6FB}';
+    if (v === 'SUV' || v === 'MPV') return '\u{1F699}';
+    return '\u{1F697}';
+  };
+
+
   return (
     <div className="page-container review-page">
       {/* Phone Modal for Google OAuth Users */}
@@ -798,10 +808,10 @@ const Review = () => {
       {showCelebration && (
         <div className="celebration-overlay">
           <div className="celebration-banner">
-            <span className="celebration-emoji">🎉</span>
+            <span className="celebration-emoji">ðŸŽ‰</span>
             <h2 className="celebration-title">Welcome aboard!</h2>
-            <p className="celebration-text">You got <strong>₹20 Signup Bonus!</strong></p>
-            <span className="celebration-emoji">🎊</span>
+            <p className="celebration-text">You got <strong>â‚¹20 Signup Bonus!</strong></p>
+            <span className="celebration-emoji">ðŸŽŠ</span>
           </div>
         </div>
       )}
@@ -809,15 +819,15 @@ const Review = () => {
       {showPhoneModal && (
         <div className="phone-modal-overlay">
           <div className="phone-link-modal">
-            <button className="phone-link-close" onClick={() => setShowPhoneModal(false)}>✕</button>
+            <button className="phone-link-close" onClick={() => setShowPhoneModal(false)}>âœ•</button>
 
             {phoneStep === 'enter' && (
               <>
-                <div className="phone-link-icon">📱</div>
+                <div className="phone-link-icon">ðŸ“±</div>
                 <h3 className="phone-link-title">Link Your Phone Number</h3>
                 <p className="phone-link-desc">Link your number to access membership details & booking history</p>
                 <div className="modal-or-divider"><span>or</span></div>
-                <p className="phone-link-desc phone-link-desc-green">sign up with a new number to get<br/><strong className="highlight-bonus">₹20 off!</strong></p>
+                <p className="phone-link-desc phone-link-desc-green">sign up with a new number to get<br/><strong className="highlight-bonus">â‚¹20 off!</strong></p>
                 <input
                   type="tel"
                   className="phone-link-input"
@@ -840,13 +850,13 @@ const Review = () => {
 
             {phoneStep === 'confirm' && (
               <>
-                <div className="phone-link-icon">{phoneIsNew ? '🎉' : '👋'}</div>
+                <div className="phone-link-icon">{phoneIsNew ? 'ðŸŽ‰' : 'ðŸ‘‹'}</div>
                 <h3 className="phone-link-title">
                   {phoneIsNew ? 'New User!' : 'Welcome Back!'}
                 </h3>
                 <p className="phone-link-desc">
                   {phoneIsNew
-                    ? 'Get a signup bonus of ₹20 off on your first booking!'
+                    ? 'Get a signup bonus of â‚¹20 off on your first booking!'
                     : `${phoneInput} is already registered with ${phoneExistingEmail}. Do you wish to continue?`
                   }
                 </p>
@@ -869,7 +879,7 @@ const Review = () => {
 
             {phoneStep === 'otp' && (
               <>
-                <div className="phone-link-icon">🔐</div>
+                <div className="phone-link-icon">ðŸ”</div>
                 <h3 className="phone-link-title">Verify OTP</h3>
                 <p className="phone-link-desc">Enter the OTP sent to {phoneInput}</p>
                 <input
@@ -902,54 +912,47 @@ const Review = () => {
         </div>
       )}
 
-      {/* Header */}
-      <header className="header review-header">
-        <button className="back-btn-inline" onClick={() => navigate(-1)}>←</button>
-        <h1 className="review-title">Please review the details</h1>
-      </header>
+      <BookingSteps current={3} />
 
       {/* Booking Details */}
       <div className="booking-info">
         <div className="booking-info-header">
           <span className="booking-info-title">Booking Summary</span>
           <span className={`booking-mode-pill ${rawServiceType === 'HOME' ? 'home' : (rawServiceType === 'SERVICE_CENTRE' ? 'service-centre' : 'centre')}`}>
-            {rawServiceType === 'HOME' ? '🏠 @Home' : (rawServiceType === 'SERVICE_CENTRE' ? '🏢 @Service Centre' : '🏢 @Centre')}
+            {rawServiceType === 'HOME' ? 'ðŸ  @Home' : (rawServiceType === 'SERVICE_CENTRE' ? 'ðŸ¢ @Service Centre' : 'ðŸ¢ @Centre')}
           </span>
         </div>
         <div className="booking-row">
-          <span className="booking-icon">{'🧴'}</span>
-          <div className="booking-label-value">
-            <span className="booking-label">Wash Type</span>
-            <span className="booking-value">{bookingData.washType}</span>
-          </div>
+          <span className="booking-icon">🧴</span>
+          <span className="booking-label">Wash Type</span>
+          <span className="booking-sep">:</span>
+          <span className="booking-value">{bookingData.washType}</span>
         </div>
+        {bookingData.vehicleType && (
         <div className="booking-row">
-          <span className="booking-icon">{'🚗'}</span>
-          <div className="booking-label-value">
-            <span className="booking-label">Vehicle</span>
-            <span className="booking-value">{bookingData.vehicleType}</span>
-          </div>
+          <span className="booking-icon">{getVehicleIcon(bookingData.vehicleType)}</span>
+          <span className="booking-label">Vehicle</span>
+          <span className="booking-sep">:</span>
+          <span className="booking-value">{bookingData.vehicleType}</span>
         </div>
+        )}
         <div className="booking-row">
-          <span className="booking-icon">{'🔢'}</span>
-          <div className="booking-label-value">
-            <span className="booking-label">Vehicle No.</span>
-            <span className="booking-value">{bookingData.vehicleNumber}</span>
-          </div>
+          <span className="booking-icon">🔢</span>
+          <span className="booking-label">Vehicle No.</span>
+          <span className="booking-sep">:</span>
+          <span className="booking-value">{bookingData.vehicleNumber}</span>
         </div>
         <div className="booking-row booking-row-multiline">
-          <span className="booking-icon">{'📍'}</span>
-          <div className="booking-label-value">
-            <span className="booking-label">Address</span>
-            <span className="booking-value">{bookingData.address}</span>
-          </div>
+          <span className="booking-icon">📍</span>
+          <span className="booking-label">Address</span>
+          <span className="booking-sep">:</span>
+          <span className="booking-value">{bookingData.address}</span>
         </div>
         <div className="booking-row">
-          <span className="booking-icon">{'📅'}</span>
-          <div className="booking-label-value">
-            <span className="booking-label">Date</span>
-            <span className="booking-value booking-value-accent">{formatDateForDisplay(bookingData.selectedDate)}</span>
-          </div>
+          <span className="booking-icon">📅</span>
+          <span className="booking-label">Date</span>
+          <span className="booking-sep">:</span>
+          <span className="booking-value booking-value-accent">{formatDateForDisplay(bookingData.selectedDate)}</span>
         </div>
       </div>
 
@@ -1033,7 +1036,7 @@ const Review = () => {
       {existingSubscription && !bookingData.subscriptionRedeemed && (
         <div className="existing-sub-prompt">
           <p className="existing-sub-title">
-            🎟️ You have a subscription for this combination ({existingSubscription.leftWashes} wash{Number(existingSubscription.leftWashes) !== 1 ? 'es' : ''} left)
+            ðŸŽŸï¸ You have a subscription for this combination ({existingSubscription.leftWashes} wash{Number(existingSubscription.leftWashes) !== 1 ? 'es' : ''} left)
           </p>
           <p className="existing-sub-question">Would you like to use your subscription?</p>
           <div className="existing-sub-options">
@@ -1102,7 +1105,7 @@ const Review = () => {
       {/* Savings Message */}
       {!isSubscriptionRedeemed && savings > 0 && (
         <div className="savings-message">
-          <span>🎉 Hurrahh! You are saving {formatCurrency(savings)}</span>
+          <span>ðŸŽ‰ Hurrahh! You are saving {formatCurrency(savings)}</span>
         </div>
       )}
 
@@ -1128,7 +1131,7 @@ const Review = () => {
       {showDealPopup && matchedDealForPopup && (
         <div className="deal-popup-overlay" onClick={() => setShowDealPopup(false)}>
           <div className="deal-popup-card" onClick={(e) => e.stopPropagation()}>
-            <button className="deal-popup-close" onClick={() => setShowDealPopup(false)}>✕</button>
+            <button className="deal-popup-close" onClick={() => setShowDealPopup(false)}>âœ•</button>
             <div className="deal-popup-header">
               <span className="deal-popup-badge">
                 {getDiscountPercent(matchedDealForPopup.originalPrice, matchedDealForPopup.discountedPrice)}% OFF
@@ -1141,8 +1144,8 @@ const Review = () => {
               </p>
             </div>
             <div className="deal-popup-pricing">
-              <span className="deal-popup-original">₹{Math.round(matchedDealForPopup.originalPrice)}</span>
-              <span className="deal-popup-final">₹{Math.round(matchedDealForPopup.discountedPrice)}/-</span>
+              <span className="deal-popup-original">â‚¹{Math.round(matchedDealForPopup.originalPrice)}</span>
+              <span className="deal-popup-final">â‚¹{Math.round(matchedDealForPopup.discountedPrice)}/-</span>
             </div>
             <p className="deal-popup-saving">
               You save <strong>{formatCurrency(subscriptionSaving)}/-</strong> compared to {matchedDealForPopup.totalWashes} one-time bookings
@@ -1215,7 +1218,7 @@ const Review = () => {
       {showLoginPopup && (
         <div className="modal-overlay" onClick={() => setShowLoginPopup(false)}>
           <div className="review-login-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="review-login-popup-icon">🔐</div>
+            <div className="review-login-popup-icon">ðŸ”</div>
             <h3 className="review-login-popup-title">Please Login / Signup</h3>
             <p className="review-login-popup-desc">to continue with your booking</p>
             <div className="review-login-popup-actions">

@@ -1,0 +1,82 @@
+/* ── Booking Progress Steps Bar ── */
+.booking-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px 10px;
+  gap: 0;
+  background: transparent;
+}
+
+.bs-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.bs-bubble {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+/* pending */
+.bs-step--pending .bs-bubble {
+  background: #ede9ff;
+  color: #a99dd8;
+  border: 2px solid #d8d2f4;
+}
+.bs-step--pending .bs-label {
+  color: #b0a8d4;
+}
+
+/* active */
+.bs-step--active .bs-bubble {
+  background: linear-gradient(135deg, #7c6bd9, #5E4DB2);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(94,77,178,0.40);
+  border: none;
+}
+.bs-step--active .bs-label {
+  color: #5E4DB2;
+  font-weight: 700;
+}
+
+/* done */
+.bs-step--done .bs-bubble {
+  background: #5E4DB2;
+  color: #fff;
+  border: none;
+}
+.bs-step--done .bs-label {
+  color: #7c6bd9;
+}
+
+.bs-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* connector line */
+.bs-line {
+  flex: 1;
+  height: 2px;
+  background: #e0daf8;
+  margin: 0 4px;
+  align-self: flex-start;
+  margin-top: 13px;
+  transition: background 0.2s;
+}
+.bs-line.done {
+  background: #5E4DB2;
+}

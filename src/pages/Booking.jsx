@@ -5,6 +5,7 @@ import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
 import { readCache, writeCache, CACHE_KEYS } from '../utils/refDataCache';
 import '../styles/Booking.css';
 import { BookingPageSkeleton, useMountSkeleton, LoadingAnnouncer } from '../components/Skeleton';
+import BookingSteps from '../components/BookingSteps';
 
 const normalizeText = (value) => String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
 
@@ -90,6 +91,8 @@ const Booking = () => {
   const [prefillApplied, setPrefillApplied] = useState(false);
   const [dynamicVehicleTypes, setDynamicVehicleTypes] = useState([]);
   const [dynamicWashTypes, setDynamicWashTypes] = useState([]);
+  const [allWashPrices, setAllWashPrices] = useState({});
+  const [allWashPricesLoading, setAllWashPricesLoading] = useState(false);
 
   // Saved addresses (persisted via /users/addresses backend endpoints)
   const ADDRESS_API_BASE = '/users/addresses';
@@ -361,14 +364,30 @@ const Booking = () => {
     '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00'
   ];
 
-  const VEHICLE_META = {
-    HATCHBACK: { desc: 'Compact car', icon: '🚗' },
-    SEDAN: { desc: 'Standard car', icon: '🚗' },
-    SUV: { desc: 'Sport Utility Vehicle', icon: '🚙' },
-    MPV: { desc: 'Multi-Purpose Vehicle', icon: '🚙' },
-    PICKUP: { desc: 'Pickup truck', icon: '🛻' },
-    BIKE: { desc: 'Motorcycle', icon: '🏍️' },
+  const formatSlotShort = (slot) => {
+    if (!slot) return slot;
+    const hour = parseInt(slot.split(':')[0], 10);
+    if (isNaN(hour)) return slot;
+    if (hour === 0 || hour === 12) return hour === 0 ? '12am' : '12pm';
+    return hour < 12 ? `${hour}am` : `${hour - 12}pm`;
   };
+
+  const VEHICLE_META = {
+    HATCHBACK: { desc: 'Compact car', img: '/images/hatchback.png' },
+    SEDAN:     { desc: 'Standard car', img: '/images/sedan.png' },
+    SUV:       { desc: 'Sport Utility Vehicle', img: '/images/suv.png' },
+    MPV:       { desc: 'Multi-Purpose Vehicle', img: '/images/suv.png' },
+    PICKUP:    { desc: 'Pickup truck', img: '/images/pickup.png' },
+    BIKE:      { desc: 'Motorcycle', img: '/images/bike.png' },
+  };
+
+  const WASH_FEATURES = {
+    Basic:   ['Exterior rinse', 'Wheel clean', 'Window wipe', 'Air freshener'],
+    Foam:    ['Foam exterior wash', 'Tyre & wheel clean', 'Interior vacuum', 'Mirror & window clean'],
+    Premium: ['Full foam wash', 'Engine bay rinse', 'Interior detail & polish', 'Wax coating'],
+  };
+
+  const WASH_ICONS = { Basic: '💧', Foam: '🫧', Premium: '✨' };
 
   useEffect(() => {
     const fetchVehicleTypes = async () => {
@@ -379,7 +398,7 @@ const Booking = () => {
         if (!res.ok) return;
         const data = await res.json();
         const mapped = data.map((v) => ({
-          id: v, name: v, desc: VEHICLE_META[v]?.desc || v, icon: VEHICLE_META[v]?.icon || '🚗'
+          id: v, name: v, desc: VEHICLE_META[v]?.desc || v, img: VEHICLE_META[v]?.img || '/images/hatchback.png'
         }));
         setDynamicVehicleTypes(mapped);
         writeCache(CACHE_KEYS.VEHICLE_TYPES, mapped);
@@ -706,7 +725,7 @@ const Booking = () => {
       || selectedCentre.fullAddress
       || selectedCentre.area
       || '';
-    if (centreAddress) {
+    if (centreAddress && !isHomeService) {
       setSearchAddress(centreAddress);
     }
     setCentreName(selectedCentre.name || selectedCentre.centreName || 'Home');
@@ -861,6 +880,30 @@ const Booking = () => {
 
     return () => controller.abort();
   }, [selectedVehicle, washType, isSubscriptionApplied, selectedCentreId]);
+
+  // Pre-fetch prices for all wash types (used by wash-plan cards in service centre flow)
+  useEffect(() => {
+    if (!selectedVehicle || isSubscriptionApplied) return;
+    const washList = dynamicWashTypes.length > 0 ? dynamicWashTypes : ['Basic', 'Foam', 'Premium'];
+    setAllWashPricesLoading(true);
+    const headers = withAuthHeader({ Accept: 'application/json' });
+    Promise.all(
+      washList.map(async (wt) => {
+        try {
+          const params = new URLSearchParams({ vehicleType: selectedVehicle, washLevel: wt.toUpperCase() });
+          const url = (selectedCentreId !== null && selectedCentreId !== undefined && Number(selectedCentreId) > 0)
+            ? `/rates/centre/${selectedCentreId}/price?${params.toString()}`
+            : `/rates?${params.toString()}`;
+          const res = await fetch(url, { method: 'GET', headers });
+          if (res.ok) { const d = await res.json(); return [wt, d.amount ?? null]; }
+          return [wt, null];
+        } catch { return [wt, null]; }
+      })
+    ).then((entries) => {
+      setAllWashPrices(Object.fromEntries(entries));
+      setAllWashPricesLoading(false);
+    });
+  }, [selectedVehicle, selectedCentreId, isSubscriptionApplied, dynamicWashTypes.length]);
 
   // Recalculate price when water option changes
   useEffect(() => {
@@ -1020,12 +1063,12 @@ const Booking = () => {
   };
 
   const vehicleTypes = dynamicVehicleTypes.length > 0 ? dynamicVehicleTypes : [
-    { id: 'HATCHBACK', name: 'HATCHBACK', desc: 'Compact car', icon: '🚗' },
-    { id: 'SEDAN', name: 'SEDAN', desc: 'Standard car', icon: '🚗' },
-    { id: 'SUV', name: 'SUV', desc: 'Sport Utility Vehicle', icon: '🚙' },
-    { id: 'MPV', name: 'MPV', desc: 'Multi-Purpose Vehicle', icon: '🚙' },
-    { id: 'PICKUP', name: 'PICKUP', desc: 'Pickup truck', icon: '🛻' },
-    { id: 'BIKE', name: 'BIKE', desc: 'Motorcycle', icon: '🏍️' }
+    { id: 'HATCHBACK', name: 'HATCHBACK', desc: 'Compact car', img: '/images/hatchback.png' },
+    { id: 'SEDAN',     name: 'SEDAN',     desc: 'Standard car', img: '/images/sedan.png' },
+    { id: 'SUV',       name: 'SUV',       desc: 'Sport Utility Vehicle', img: '/images/suv.png' },
+    { id: 'MPV',       name: 'MPV',       desc: 'Multi-Purpose Vehicle', img: '/images/suv.png' },
+    { id: 'PICKUP',    name: 'PICKUP',    desc: 'Pickup truck', img: '/images/pickup.png' },
+    { id: 'BIKE',      name: 'BIKE',      desc: 'Motorcycle', img: '/images/bike.png' },
   ];
 
   const VEHICLES_PER_SLIDE = 3;
@@ -1061,13 +1104,14 @@ const Booking = () => {
   const getPriceDisplayValue = () => {
     if (isSubscriptionFlow) return formatRate(0, 'INR');
     if (rateLoading || subscriptionValidationLoading) return 'Loading...';
-    if (!selectedVehicle && !washType) return 'Select wash and car type for price';
-    if (!selectedVehicle) return 'Select car type for price';
+    const vehicleRequired = rawServiceType !== 'SERVICE_CENTRE';
+    if (!selectedVehicle && !washType) return vehicleRequired ? 'Select wash and car type for price' : 'Select wash type for price';
+    if (!selectedVehicle && vehicleRequired) return 'Select car type for price';
     if (!washType) return 'Select wash type for price';
     return formatRate(finalPrice, rate.currency);
   };
 
-  const isPriceHint = !selectedVehicle || !washType;
+  const isPriceHint = (!selectedVehicle && rawServiceType !== 'SERVICE_CENTRE') || !washType;
 
   const slotsToRender = availability
     ? Object.entries(availability)
@@ -1156,6 +1200,7 @@ const Booking = () => {
 
   return (
     <div className="page-container">
+      <BookingSteps current={2} />
       {/* Back Button Header */}
       <div className="booking-header">
         {isHomeService && !isSubscriptionFlow && (
@@ -1206,95 +1251,46 @@ const Booking = () => {
       </div>
 
       {/* Select Address Action / Selected Address Card / Selected Centre Card */}
-      <div className="select-address-row">
-        {selectedCentre && (selectedCentreAddress || selectedCentre.area || selectedCentre.name) ? (
-          <button
-            type="button"
-            className="select-address-btn has-selection centre-mode"
-            onClick={() => navigate('/select-center', {
-              state: {
-                serviceType: resolvedServiceType,
-                subscription: location.state?.subscription || savedBooking?.subscription || null,
-                source: location.state?.source || null,
-                prefilledCarType: location.state?.prefilledCarType || null
-              }
-            })}
-          >
-            <span className="select-address-content">
-              <span className="centre-card-top">
-                <span className="centre-card-icon" aria-hidden="true">📍</span>
-                <span className="centre-card-heading">
-                  <span className="select-address-label">{isHomeService ? 'Service Address' : 'Service Centre'}</span>
-                  <span className="centre-card-name">
-                    {selectedCentre.name || selectedCentre.centreName || (isHomeService ? 'Selected location' : 'Service Centre')}
-                  </span>
-                </span>
-                <span className="select-address-change">Change</span>
-              </span>
-              {(selectedCentreAddress || selectedCentre.area) && (
-                <span className="select-address-text centre-card-address">
-                  {selectedCentreAddress || selectedCentre.area}
-                </span>
-              )}
-            </span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            className={`select-address-btn ${selectedSavedAddress ? 'has-selection' : ''}`}
-            onClick={openAddressList}
-          >
-            {selectedSavedAddress ? (
-              <span className="select-address-content">
-                <span className="select-address-label">{selectedSavedAddress.label || 'Address'}</span>
-                <span className="select-address-text">{formatSavedAddress(selectedSavedAddress)}</span>
-                <span className="select-address-change">Change</span>
-              </span>
-            ) : (
-              <span className="select-address-content">
-                <span className="select-address-text">Select Address</span>
-              </span>
-            )}
-          </button>
-        )}
-      </div>
-
       {/* Booking Details */}
       <div className="booking-details">
-        <div className="booking-info-card">
+        <div className="booking-info-card" onClick={() => setShowCalendar(true)}>
           <div className="booking-schedule">
-            <span className="schedule-icon">📅</span>
-            <span>
-              Schedule: {selectedDate && selectedTimeSlot
-                ? `${formatDate(selectedDate)} ${selectedTimeSlot}`
-                : 'Select date and time'}
+            <span className="schedule-icon-svg" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+              </svg>
             </span>
+            <div className="schedule-text-col">
+              <span className="schedule-date-text">
+                {selectedDate ? formatDate(selectedDate) : 'Select date'}
+              </span>
+              <span
+                className={`schedule-time-text${selectedTimeSlot ? '' : ' muted'}`}
+                onClick={(e) => { if (selectedDate) { e.stopPropagation(); setShowTimeSlots(true); } }}
+              >
+                {selectedTimeSlot || (selectedDate ? 'Tap to pick time' : 'Select time slot')}
+              </span>
+            </div>
           </div>
-          <button className="points-badge" onClick={() => setShowCalendar(true)}>📅</button>
+          <button
+            className="points-badge"
+            onClick={(e) => { e.stopPropagation(); setShowCalendar(true); }}
+            aria-label="Pick date"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+          </button>
         </div>
 
-        {isSubscriptionSelectionLocked ? (
+
+        {isSubscriptionSelectionLocked && (
           <div className="subscription-lock-summary" role="group" aria-label="Subscription locked details">
             <div className="subscription-lock-summary-row">
               <span className="subscription-lock-summary-label">🔒 Wash type locked by subscription plan</span>
               <span className="subscription-lock-summary-sep">:</span>
               <span className="subscription-lock-summary-value">{washType || normalizeWashType(selectedSubscription?.washType)}</span>
-            </div>
-          </div>
-        ) : (
-          <div className="booking-wash-type-standalone">
-            <span className="wash-label-text">{washType ? 'selected wash type:' : 'select your wash type:'}</span>
-            <div className="wash-btn-group">
-              {(dynamicWashTypes.length > 0 ? dynamicWashTypes : ['Foam', 'Basic', 'Premium']).map((type) => (
-                <button
-                  key={type}
-                  className={`wash-btn ${washType === type ? 'wash-btn-selected' : ''}`}
-                  onClick={() => !(isSubscriptionApplied || isSubscriptionSelectionLocked) && setWashType(washType === type ? '' : type)}
-                  disabled={isSubscriptionApplied || isSubscriptionSelectionLocked}
-                >
-                  {type}
-                </button>
-              ))}
             </div>
           </div>
         )}
@@ -1343,10 +1339,19 @@ const Booking = () => {
               <h3>Select Time Slot</h3>
               {selectedDate && (
                 <div className="selected-date-row">
-                  <span className="selected-date-label">Selected date: {formatDateWithMonth(selectedDate)}</span>
-                  <button type="button" className="edit-date-btn" onClick={handleEditDate}>Edit date?</button>
+                  <span className="selected-date-label">{formatDateWithMonth(selectedDate)}</span>
+                  <button type="button" className="edit-date-btn" onClick={handleEditDate}>Change!</button>
                 </div>
               )}
+              <div className="timeslot-legend">
+                <span className="timeslot-legend-note">• Every slot is 1 hour</span>
+                <span className="timeslot-legend-item">
+                  <span className="timeslot-legend-dot available"></span> Available
+                </span>
+                <span className="timeslot-legend-item">
+                  <span className="timeslot-legend-dot booked"></span> Booked
+                </span>
+              </div>
               {loadingSlots ? (
                 <p className="timeslots-loading">Loading available slots...</p>
               ) : (
@@ -1358,10 +1363,7 @@ const Booking = () => {
                       onClick={() => isAvailable && handleTimeSlotSelect(slot)}
                       disabled={!isAvailable}
                     >
-                      <span className="timeslot-time">{slot}</span>
-                      <span className="timeslot-status">
-                        {isAvailable ? '✓ Available' : '✗ Booked'}
-                      </span>
+                      <span className="timeslot-time">{formatSlotShort(slot)}</span>
                     </button>
                   ))}
                 </div>
@@ -1371,7 +1373,7 @@ const Booking = () => {
           </div>
         )}
 
-        {/* Vehicle Type Selection */}
+        {/* Vehicle / Wash Plan Selection */}
         {isSubscriptionSelectionLocked ? (
           <div className="subscription-lock-summary" role="group" aria-label="Subscription locked vehicle">
             <div className="subscription-lock-summary-row">
@@ -1385,96 +1387,131 @@ const Booking = () => {
               <span className="subscription-lock-summary-value subscription-lock-summary-price">{formatRate(0, 'INR')}</span>
             </div>
           </div>
-        ) : (
-        <div className="vehicle-selection">
-          <h3>{vehicleSelectionTitle}</h3>
-          <div className="vehicle-types">
-            <div className="vehicle-train-window">
-              <div
-                className="vehicle-train-touch-area"
-                onTouchStart={handleVehicleSwipeStart}
-                onTouchEnd={handleVehicleSwipeEnd}
-                onMouseDown={handleVehicleMouseDown}
-                onMouseUp={handleVehicleMouseUp}
-                onMouseLeave={handleVehicleMouseLeave}
-              >
-              <div
-                className="vehicle-train-track"
-                style={{ transform: `translateX(-${vehicleSlideIndex * 100}%)` }}
-              >
-                {vehiclePages.map((page, pageIndex) => (
-                  <div className="vehicle-train-page" key={`vehicle-page-${pageIndex}`}>
-                    {page.map((vehicle) => (
-                      <div
-                        key={vehicle.id}
-                        className={`vehicle-type-card ${selectedVehicle === vehicle.id ? 'selected' : ''}`}
-                        onClick={() => {
-                          if (Date.now() < vehicleSwipeSuppressClickUntilRef.current) {
-                            return;
-                          }
-                          if (!isSubscriptionApplied && !isSubscriptionSelectionLocked) {
-                            setSelectedVehicle(selectedVehicle === vehicle.id ? '' : vehicle.id);
-                            if (prefillApplied) {
-                              setVehicleNumber('');
-                              setPrefillApplied(false);
-                            }
-                          }
-                        }}
-                      >
-                        <div className="vehicle-icon">
-                          {vehicle.icon}
-                          {selectedVehicle === vehicle.id && (
-                            <div className="check-icon">✓</div>
-                          )}
-                        </div>
-                        <h4>{vehicle.name}</h4>
-                        <p>{vehicle.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-              </div>
-            </div>
-            <div className="vehicle-train-dots" aria-label="Vehicle slide indicator">
-              {vehiclePages.map((_, index) => (
-                <button
-                  key={`vehicle-dot-${index}`}
-                  type="button"
-                  className={`vehicle-train-dot ${vehicleSlideIndex === index ? 'active' : ''}`}
-                  onClick={() => {
-                    setVehicleSlideIndex(index);
-                  }}
-                  aria-label={`Go to vehicle slide ${index + 1}`}
-                />
+        ) : (selectedCentre || isHomeService) ? (
+          /* ── WASH PLAN CARDS — service centre & home flow ── */
+          <div className="wash-plan-selector">
+            <div className="wash-plan-vehicle-mini-row">
+              {vehicleTypes.map((vehicle) => (
+                <div
+                  key={vehicle.id}
+                  className={`wash-plan-vehicle-mini${selectedVehicle === vehicle.id ? ' active' : ''}`}
+                  onClick={() => setSelectedVehicle(vehicle.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && setSelectedVehicle(vehicle.id)}
+                >
+                  <img src={vehicle.img || '/images/hatchback.png'} alt={vehicle.name} className="wash-plan-vehicle-mini-icon" />
+                  <span className="wash-plan-vehicle-mini-name">
+                    {vehicle.name.charAt(0) + vehicle.name.slice(1).toLowerCase()}
+                  </span>
+                </div>
               ))}
             </div>
+            {(dynamicWashTypes.length > 0 ? dynamicWashTypes : ['Basic', 'Foam', 'Premium']).map((type) => {
+              const price = allWashPrices[type];
+              const isSelected = washType === type;
+              return (
+                <div
+                  key={type}
+                  className={`wash-plan-card${isSelected ? ' selected' : ''}`}
+                  onClick={() => setWashType(type)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && setWashType(type)}
+                >
+                  <div className="wash-plan-card-left">
+                    <span className="wash-plan-icon">{WASH_ICONS[type] || '🚿'}</span>
+                    <div className="wash-plan-body">
+                      <span className="wash-plan-name">{type} Wash</span>
+                      <div className="wash-plan-features">
+                        {(WASH_FEATURES[type] || []).map((f, fi) => (
+                          <span key={fi} className="wash-plan-feature">✓ {f}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    type="radio"
+                    name="wash-plan"
+                    checked={isSelected}
+                    onChange={() => setWashType(type)}
+                    className="wash-plan-radio"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div className="wash-plan-card-right">
+                    {allWashPricesLoading
+                      ? <span className="wash-plan-price">...</span>
+                      : (price !== null && price !== undefined
+                          ? <span className="wash-plan-price">{formatRate(price, 'INR')}</span>
+                          : <span className="wash-plan-price-empty">Select car to get price</span>
+                        )
+                    }
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-        )}
-
-        {/* Wash Type row */}
-        <div className="water-wash-row">
-          <div className="booking-wash-type-wrap">
-            {!isSubscriptionSelectionLocked && (
-              <div className="booking-wash-type-standalone booking-wash-type-in-row">
-                <span className="wash-label-text">{washType ? 'selected wash type:' : 'select your wash type:'}</span>
-                <div className="wash-btn-group">
-                  {(dynamicWashTypes.length > 0 ? dynamicWashTypes : ['Foam', 'Basic', 'Premium']).map((type) => (
-                    <button
-                      key={type}
-                      className={`wash-btn ${washType === type ? 'wash-btn-selected' : ''}`}
-                      onClick={() => !(isSubscriptionApplied || isSubscriptionSelectionLocked) && setWashType(washType === type ? '' : type)}
-                      disabled={isSubscriptionApplied || isSubscriptionSelectionLocked}
-                    >
-                      {type}
-                    </button>
+        ) : (
+          /* ── ORIGINAL VEHICLE CAROUSEL ── */
+          <div className="vehicle-selection">
+            <h3>{vehicleSelectionTitle}</h3>
+            <div className="vehicle-types">
+              <div className="vehicle-train-window">
+                <div
+                  className="vehicle-train-touch-area"
+                  onTouchStart={handleVehicleSwipeStart}
+                  onTouchEnd={handleVehicleSwipeEnd}
+                  onMouseDown={handleVehicleMouseDown}
+                  onMouseUp={handleVehicleMouseUp}
+                  onMouseLeave={handleVehicleMouseLeave}
+                >
+                <div
+                  className="vehicle-train-track"
+                  style={{ transform: `translateX(-${vehicleSlideIndex * 100}%)` }}
+                >
+                  {vehiclePages.map((page, pageIndex) => (
+                    <div className="vehicle-train-page" key={`vehicle-page-${pageIndex}`}>
+                      {page.map((vehicle) => (
+                        <div
+                          key={vehicle.id}
+                          className={`vehicle-type-card ${selectedVehicle === vehicle.id ? 'selected' : ''}`}
+                          onClick={() => {
+                            if (Date.now() < vehicleSwipeSuppressClickUntilRef.current) return;
+                            if (!isSubscriptionApplied && !isSubscriptionSelectionLocked) {
+                              setSelectedVehicle(selectedVehicle === vehicle.id ? '' : vehicle.id);
+                              if (prefillApplied) { setVehicleNumber(''); setPrefillApplied(false); }
+                            }
+                          }}
+                        >
+                          <div className="vehicle-icon">
+                            <img src={vehicle.img || '/images/hatchback.png'} alt={vehicle.name} className="vehicle-img" />
+                            {selectedVehicle === vehicle.id && <div className="check-icon">✓</div>}
+                          </div>
+                          <h4>{vehicle.name}</h4>
+                          <p>{vehicle.desc}</p>
+                        </div>
+                      ))}
+                    </div>
                   ))}
                 </div>
+                </div>
               </div>
-            )}
+              <div className="vehicle-train-dots" aria-label="Vehicle slide indicator">
+                {vehiclePages.map((_, index) => (
+                  <button
+                    key={`vehicle-dot-${index}`}
+                    type="button"
+                    className={`vehicle-train-dot ${vehicleSlideIndex === index ? 'active' : ''}`}
+                    onClick={() => setVehicleSlideIndex(index)}
+                    aria-label={`Go to vehicle slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Wash Type row — only for home/no-centre flows or when vehicle not yet chosen in service centre flow */}
 
         {isSubscriptionFlow && subscriptionValidationError && !subscriptionValidationLoading && (
           <p className="benefits-note benefits-note-error">
@@ -1482,17 +1519,41 @@ const Booking = () => {
           </p>
         )}
 
-        {/* Price Display and Vehicle Number */}
-        <div className="booking-summary-row">
-          <div className="price-display">
-            <span className="price-label">Price:</span>
-            <span className={`price-value ${isPriceHint ? 'hint' : ''}`}>
-              {getPriceDisplayValue()}
-            </span>
+        {/* Select Address — home flow only */}
+        {isHomeService && (
+          <div
+            className={`booking-info-card booking-address-card${selectedSavedAddress ? ' has-address' : ''}`}
+            onClick={openAddressList}
+          >
+            <div className="booking-schedule">
+              <span className="schedule-icon-svg" aria-hidden="true">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                  <circle cx="12" cy="9" r="2.5"/>
+                </svg>
+              </span>
+              <div className="schedule-text-col">
+                <span className="schedule-date-text">
+                  {selectedSavedAddress ? formatSavedAddress(selectedSavedAddress) : 'Select address'}
+                </span>
+                <span className={`schedule-time-text${selectedSavedAddress ? '' : ' muted'}`}>
+                  {selectedSavedAddress ? 'Tap to change' : 'Where we come to wash'}
+                </span>
+              </div>
+            </div>
+            <button
+              className="points-badge"
+              onClick={(e) => { e.stopPropagation(); openAddressList(); }}
+              aria-label="Select address"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            </button>
           </div>
+        )}
 
-          {/* Vehicle Number Input */}
-          <div className="vehicle-input-section">
+        {/* Vehicle Number */}
+        <div className="booking-summary-row">
+          <div className="vehicle-input-section vehicle-input-full">
             <input
               type="text"
               value={vehicleNumber}
@@ -1500,9 +1561,8 @@ const Booking = () => {
                 setVehicleNumber(e.target.value.toUpperCase());
                 if (vehicleNumberError) setVehicleNumberError('');
               }}
-              placeholder="(e.g., TN01AB1234)"
+              placeholder="Vehicle number (e.g., TN01AB1234)"
               className="vehicle-number-input"
-              required
             />
           </div>
         </div>
@@ -1539,7 +1599,7 @@ const Booking = () => {
             setVehicleNumberError('Please select a time slot');
             return;
           }
-          if (!selectedVehicle) {
+          if (!selectedVehicle && rawServiceType !== 'SERVICE_CENTRE') {
             setVehicleNumberError('Please choose your vehicle type');
             return;
           }

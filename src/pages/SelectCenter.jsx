@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import BookingSteps from '../components/BookingSteps';
 import { withAuthHeader } from '../utils/auth';
 import { readCache, writeCache, CACHE_KEYS } from '../utils/refDataCache';
 import '../styles/SelectCenter.css';
@@ -579,14 +580,7 @@ const SelectCenter = () => {
 
   return (
     <div className="page-container">
-      <div className="select-center-ux-header">
-        <header className="select-center-header">
-          <button className="back-btn" onClick={() => navigate(-1)}>←</button>
-          <div className="header-copy">
-            <h2 className="header-title">{headerMeta.title}</h2>
-          </div>
-        </header>
-      </div>
+      <BookingSteps current={1} />
 
       <div className="service-centre-hero">
         <div className="area-selection area-selection-overlay">

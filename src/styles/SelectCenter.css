@@ -1,10 +1,10 @@
 .select-center-ux-header {
-  background: linear-gradient(135deg, #1a237e 0%, #5e35b1 55%, #ec407a 110%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 16px;
-  padding: 10px 14px;
-  margin-bottom: 12px;
-  box-shadow: 0 8px 22px rgba(26, 35, 126, 0.28);
+  display: none;
+}
+
+.sc-plain-back {
+  padding: 8px 4px 0;
+  margin-bottom: 4px;
 }
 
 .select-center-header {
