@@ -48,4 +48,4 @@ jobs:
             sudo sed -i '/proxy_cache_path.*carwash_api_cache/d' /etc/nginx/nginx.conf
             sudo sed -i '/proxy_cache_lock_timeout/d' /etc/nginx/nginx.conf
             sudo sed -i '/proxy_cache_lock on/d' /etc/nginx/nginx.conf
-            sudo nginx -t && sudo systemctl reload nginx
+            sudo nginx -t && sudo systemctl is-active nginx && sudo systemctl reload nginx || sudo systemctl start nginx
