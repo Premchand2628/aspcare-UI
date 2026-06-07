@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+
+# ─── RewardsCalculation.jsx ─────────────────────────────────
+jsx = r"""import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
@@ -221,3 +225,402 @@ const RewardsCalculation = () => {
 };
 
 export default RewardsCalculation;
+"""
+
+with open(r'E:\Car wash\MainApp\src\pages\RewardsCalculation.jsx', 'w', encoding='utf-8') as f:
+    f.write(jsx)
+print('RewardsCalculation.jsx written OK')
+
+# ─── RewardsCalculation.css ─────────────────────────────────
+css = """/* ============================================================
+   REWARDS CALCULATION PAGE
+   ============================================================ */
+
+.rc-page {
+  min-height: 100vh;
+  background: #f4f6fb;
+  padding-bottom: 80px;
+  max-width: 480px;
+  margin: 0 auto;
+  font-family: inherit;
+}
+
+/* ── Hero ── */
+.rc-hero {
+  background: linear-gradient(135deg, #1a237e 0%, #3949ab 60%, #283593 100%);
+  border-radius: 0 0 28px 28px;
+  padding: 36px 24px 32px;
+  text-align: center;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* subtle arc decoration */
+.rc-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: -40px; right: -40px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  pointer-events: none;
+}
+
+.rc-hero-label {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.5px;
+  margin: 0 0 12px;
+}
+
+.rc-hero-balance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.rc-drop-icon svg {
+  width: 48px;
+  height: 64px;
+  filter: drop-shadow(0 4px 12px rgba(79,195,247,0.5));
+}
+
+.rc-balance-num {
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  letter-spacing: -2px;
+}
+
+.rc-balance-d {
+  font-size: 40px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.85);
+  align-self: flex-end;
+  padding-bottom: 6px;
+}
+
+.rc-hero-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  margin: 0;
+}
+
+/* ── Redeem section ── */
+.rc-redeem-section {
+  background: #fff;
+  border-radius: 20px;
+  margin: 16px 14px;
+  padding: 18px 16px 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* Tier tabs */
+.rc-tier-tabs {
+  display: flex;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+.rc-tier-tab {
+  flex: 1;
+  padding: 10px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  border-right: 1px solid #e5e7eb;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.rc-tier-tab:last-child { border-right: none; }
+.rc-tier-tab.active {
+  background: #1a237e;
+  color: #fff;
+}
+
+/* Products row */
+.rc-products-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.rc-products-row::-webkit-scrollbar { display: none; }
+
+.rc-product-card {
+  flex: 0 0 calc(33.33% - 8px);
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0.55;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.rc-product-card.active {
+  opacity: 1;
+  transform: scale(1.03);
+}
+
+.rc-product-img-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2.5px solid #ef4444;
+  aspect-ratio: 4/3;
+  background: #f0f0f0;
+}
+
+.rc-product-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rc-redeem-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1f36;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.rc-redeem-chevron {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e8eaf6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rc-redeem-chevron svg {
+  width: 14px;
+  height: 14px;
+  color: #1a237e;
+}
+
+/* ── Promo banner ── */
+.rc-promo-card {
+  background: #fff;
+  border-radius: 20px;
+  margin: 0 14px 14px;
+  padding: 18px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.rc-promo-icon {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 14px;
+  background: #eef0fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rc-promo-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.rc-promo-text { flex: 1; min-width: 0; }
+
+.rc-promo-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1f36;
+  margin: 0 0 2px;
+}
+
+.rc-promo-sub {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+}
+
+.rc-promo-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1a237e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 24px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rc-promo-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── History ── */
+.rc-history-section {
+  background: #fff;
+  border-radius: 20px;
+  margin: 0 14px;
+  padding: 18px 16px 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.rc-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.rc-history-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1f36;
+}
+
+.rc-view-all {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #3b4fce;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.rc-view-all svg {
+  width: 15px;
+  height: 15px;
+}
+
+.rc-history-list { display: flex; flex-direction: column; }
+
+.rc-history-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.rc-history-item:last-child { border-bottom: none; }
+
+.rc-history-item-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  background: #1a237e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.rc-history-item-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.rc-history-item-main { flex: 1; min-width: 0; }
+
+.rc-history-code {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1f36;
+  margin: 0 0 2px;
+}
+
+.rc-history-date {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.rc-history-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rc-status-icon-wrap svg {
+  width: 18px;
+  height: 18px;
+}
+
+.rc-drops-badge {
+  min-width: 52px;
+  text-align: center;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.rc-loading {
+  text-align: center;
+  padding: 30px;
+  color: #888;
+  font-size: 14px;
+}
+
+.rc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+  color: #888;
+  font-size: 14px;
+  text-align: center;
+}
+
+.rc-empty-icon svg { width: 48px; height: 64px; }
+
+/* ── Desktop ── */
+@media (min-width: 768px) {
+  .rc-page { max-width: 860px; padding: 0 32px 80px; }
+  .rc-hero { border-radius: 20px; margin-top: 20px; }
+  .rc-balance-num { font-size: 80px; }
+  .rc-drop-icon svg { width: 60px; height: 80px; }
+}
+"""
+
+with open(r'E:\Car wash\MainApp\src\styles\RewardsCalculation.css', 'w', encoding='utf-8') as f:
+    f.write(css)
+print('RewardsCalculation.css written OK')
+print('Done.')

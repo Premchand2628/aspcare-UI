@@ -914,12 +914,14 @@ const Review = () => {
 
       <BookingSteps current={3} />
 
-      {/* Booking Details */}
-      <div className="booking-info">
+      <div className="review-desktop-grid">
+        <div className="review-left-col">
+        {/* Booking Details */}
+        <div className="booking-info">
         <div className="booking-info-header">
           <span className="booking-info-title">Booking Summary</span>
           <span className={`booking-mode-pill ${rawServiceType === 'HOME' ? 'home' : (rawServiceType === 'SERVICE_CENTRE' ? 'service-centre' : 'centre')}`}>
-            {rawServiceType === 'HOME' ? 'ðŸ  @Home' : (rawServiceType === 'SERVICE_CENTRE' ? 'ðŸ¢ @Service Centre' : 'ðŸ¢ @Centre')}
+            {rawServiceType === 'HOME' ? '@Home' : (rawServiceType === 'SERVICE_CENTRE' ? '@Service Centre' : '@Centre')}
           </span>
         </div>
         <div className="booking-row">
@@ -1196,6 +1198,21 @@ const Review = () => {
       {bookingSubmitSuccess && (
         <p className="promo-message success">{bookingSubmitSuccess}</p>
       )}
+        </div>{/* /review-left-col */}
+
+        {/* Desktop right column — payment panel */}
+        <div className="review-right-col">
+          <div className="review-payment-panel">
+            <PaymentMethodModal
+              inline
+              open={true}
+              onClose={() => {}}
+              onSelect={handlePaymentMethodSelect}
+              amount={Math.max(0, grandTotal)}
+            />
+          </div>
+        </div>
+      </div>{/* /review-desktop-grid */}
 
       {/* Bottom Navigation */}
       <BottomNav active="home" />

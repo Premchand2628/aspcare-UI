@@ -1,567 +1,386 @@
-.rewards-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px;
-  background: linear-gradient(135deg, #5E4DB2 0%, #7C5CDB 100%);
-  color: white;
-  margin: -20px -20px 20px -20px;
-  position: relative;
+/* ============================================================
+   REWARDS CALCULATION PAGE
+   ============================================================ */
+
+.rc-page {
+  min-height: 100vh;
+  background: #f4f6fb;
+  padding-bottom: 80px;
+  max-width: 480px;
+  margin: 0 auto;
+  font-family: inherit;
 }
 
-.rewards-header h1 {
-  font-size: 24px;
-  margin: 0;
-  flex: 1;
+/* ── Hero ── */
+.rc-hero {
+  background: linear-gradient(135deg, #1a237e 0%, #3949ab 60%, #283593 100%);
+  border-radius: 0 0 28px 28px;
+  padding: 36px 24px 32px;
   text-align: center;
-}
-
-.back-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  font-size: 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.3s;
-}
-
-.back-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.header-spacer {
-  width: 40px;
-}
-
-/* Total Drops Card */
-.total-drops-card {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  background: linear-gradient(135deg, #a9cfff 0%, #7eb3ff 100%);
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(169, 207, 255, 0.3);
-}
-
-.drops-icon-section {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 16px;
-}
-
-.drops-icon-animated {
-  font-size: 52px;
-  display: block;
-  animation: dropFloat 2.5s ease-in-out infinite;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-}
-
-@keyframes dropFloat {
-  0% { 
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-  50% { 
-    transform: translateY(-15px) scale(1.1);
-    opacity: 1;
-  }
-  100% { 
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-}
-
-.drops-info-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.drops-label {
-  margin: 0 0 6px 0;
-  font-size: 13px;
-  color: #2c5aa0;
-  letter-spacing: 0.3px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.drops-amount {
-  margin: 0;
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -1px;
-}
-
-.drops-amount.positive {
-  color: #1b5e20;
-}
-
-.drops-amount.negative {
-  color: #d32f2f;
-}
-
-/* Drops Breakdown */
-.drops-breakdown {
-  margin-bottom: 12px;
-}
-
-.drops-breakdown h3 {
-  font-size: 14px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 10px 0;
-}
-
-.drops-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.drops-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: rgba(217, 217, 217, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
-  padding: 14px 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-  flex-wrap: wrap;
-}
-
-.drops-item.compact {
-  min-height: 50px;
-}
-
-.item-content {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.wash-line-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.item-left {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.item-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0;
-  flex-shrink: 0;
-  margin-left: auto;
-  padding-left: 16px;
-}
-
-.wash-line {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: #1b1b1b;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-.date-line {
-  margin: 0;
-  font-size: 11px;
-  color: #1b1b1b;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.drops-value {
-  font-size: 18px;
-  font-weight: 800;
-  margin: 0;
-  flex-shrink: 0;
-}
-
-.drops-positive {
-  color: #1b5e20;
-}
-
-.drops-negative {
-  color: #d32f2f;
-}
-
-.drops-neutral {
-  color: #666;
-}
-
-/* Redemption Section */
-.redemption-section {
-  margin-bottom: 16px;
-  background: #a9cfff;
-  border-radius: 12px;
-  padding: 10px 12px 12px;
-}
-
-.redemption-section.compact {
-  background: #a9cfff;
-}
-
-.redemption-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #1b3a6b;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.redemption-tc {
-  font-size: 11px;
-  color: #1b3a6b;
-}
-
-.redemption-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  perspective: 1000px;
-}
-
-.redemption-grid.compact {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.redemption-card-wrapper {
-  cursor: pointer;
-  height: 100%;
-  min-height: 160px;
-}
-
-.redemption-card-wrapper.flipped .redemption-card-inner {
-  transform: rotateY(180deg);
-}
-
-.redemption-card-inner {
+  color: #fff;
   position: relative;
-  width: 100%;
-  height: 100%;
-  transition: transform 0.6s;
-  transform-style: preserve-3d;
+  overflow: hidden;
 }
 
-.redemption-card-front,
-.redemption-card-back {
+/* subtle arc decoration */
+.rc-hero::after {
+  content: '';
   position: absolute;
+  bottom: -40px; left: -40px; right: -40px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  pointer-events: none;
+}
+
+.rc-hero-label {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.5px;
+  margin: 0 0 12px;
+}
+
+.rc-hero-balance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.rc-drop-icon svg {
+  width: 48px;
+  height: 64px;
+  filter: drop-shadow(0 4px 12px rgba(79,195,247,0.5));
+}
+
+.rc-balance-num {
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  letter-spacing: -2px;
+}
+
+.rc-balance-d {
+  font-size: 40px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.85);
+  align-self: flex-end;
+  padding-bottom: 6px;
+}
+
+.rc-hero-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  margin: 0;
+}
+
+/* ── Redeem section ── */
+.rc-redeem-section {
+  background: #fff;
+  border-radius: 20px;
+  margin: 16px 14px;
+  padding: 18px 16px 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* Tier tabs */
+.rc-tier-tabs {
+  display: flex;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+.rc-tier-tab {
+  flex: 1;
+  padding: 10px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  border-right: 1px solid #e5e7eb;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.rc-tier-tab:last-child { border-right: none; }
+.rc-tier-tab.active {
+  background: #1a237e;
+  color: #fff;
+}
+
+/* Products row */
+.rc-products-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.rc-products-row::-webkit-scrollbar { display: none; }
+
+.rc-product-card {
+  flex: 0 0 calc(33.33% - 8px);
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0.55;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.rc-product-card.active {
+  opacity: 1;
+  transform: scale(1.03);
+}
+
+.rc-product-img-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2.5px solid #ef4444;
+  aspect-ratio: 4/3;
+  background: #f0f0f0;
+}
+
+.rc-product-img-wrap img {
   width: 100%;
   height: 100%;
-  backface-visibility: hidden;
+  object-fit: cover;
+  display: block;
+}
+
+.rc-redeem-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  padding: 20px 16px;
-  text-align: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.25);
-  transition: all 0.3s ease;
-}
-
-.redemption-card-front {
-  background: linear-gradient(135deg, #ff8f8f 0%, #ff6b6b 100%);
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.redemption-card-front:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.35);
-}
-
-.redemption-card-back {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%);
-  color: white;
-  transform: rotateY(180deg);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.redemption-card-front.compact {
-  padding: 20px 16px;
-}
-
-.redemption-card-back.compact {
-  padding: 20px 16px;
-}
-
-.card-amount {
-  font-size: 16px;
-  font-weight: 800;
-  color: white;
-  margin: 0;
-}
-
-.card-cta {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0;
-}
-
-.product-item {
-  font-size: 14px;
-  font-weight: 700;
-  color: white;
-  margin: 0;
-  line-height: 1.3;
-}
-
-.product-image {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  margin-bottom: 8px;
-  filter: brightness(1.1);
-}
-
-.card-proceed {
-  font-size: 10px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  margin: 0;
-}
-
-/* Empty State */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px 40px;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 80px;
-  margin-bottom: 20px;
-  opacity: 0.6;
-  animation: float 3s ease-in-out infinite;
-}
-
-.empty-state h3 {
-  font-size: 20px;
-  color: #333;
-  margin: 0 0 10px 0;
-  font-weight: 700;
-}
-
-.empty-state p {
-  font-size: 14px;
-  color: #999;
-  margin: 0 0 30px 0;
-}
-
-.book-now-btn {
-  background-color: #5E4DB2;
-  color: white;
-  padding: 14px 40px;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: transparent;
   border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.book-now-btn:hover {
-  background-color: #4a3d8a;
-}
-
-/* Drops Guide */
-.drops-guide {
-  background-color: #f9f9f9;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 30px;
-}
-
-.drops-guide h3 {
-  margin: 0 0 15px 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: #333;
-}
-
-.guide-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.guide-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  background-color: white;
-  border-radius: 10px;
-  border: 1px solid #e0e0e0;
-  text-align: center;
-}
-
-.guide-icon {
-  font-size: 24px;
-}
-
-.guide-text {
-  font-size: 12px;
-  font-weight: 600;
-  color: #333;
-  line-height: 1.2;
-}
-
-.guide-drops {
   font-size: 14px;
   font-weight: 700;
-  color: #1b5e20;
+  color: #1a1f36;
+  cursor: pointer;
+  border-radius: 8px;
 }
 
-.guide-note {
-  margin: 0;
+.rc-redeem-chevron {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e8eaf6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rc-redeem-chevron svg {
+  width: 14px;
+  height: 14px;
+  color: #1a237e;
+}
+
+/* ── Promo banner ── */
+.rc-promo-card {
+  background: #fff;
+  border-radius: 20px;
+  margin: 0 14px 14px;
+  padding: 18px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.rc-promo-icon {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 14px;
+  background: #eef0fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rc-promo-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.rc-promo-text { flex: 1; min-width: 0; }
+
+.rc-promo-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1f36;
+  margin: 0 0 2px;
+}
+
+.rc-promo-sub {
   font-size: 12px;
   color: #666;
-  font-style: italic;
+  margin: 0;
 }
 
-/* Loading State */
-.loading-state {
+.rc-promo-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1a237e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 24px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rc-promo-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── History ── */
+.rc-history-section {
+  background: #fff;
+  border-radius: 20px;
+  margin: 0 14px;
+  padding: 18px 16px 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.rc-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.rc-history-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1f36;
+}
+
+.rc-view-all {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #3b4fce;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.rc-view-all svg {
+  width: 15px;
+  height: 15px;
+}
+
+.rc-history-list { display: flex; flex-direction: column; }
+
+.rc-history-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.rc-history-item:last-child { border-bottom: none; }
+
+.rc-history-item-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  background: #1a237e;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
-  color: #999;
+  color: #fff;
+}
+
+.rc-history-item-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.rc-history-item-main { flex: 1; min-width: 0; }
+
+.rc-history-code {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1f36;
+  margin: 0 0 2px;
+}
+
+.rc-history-date {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.rc-history-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rc-status-icon-wrap svg {
+  width: 18px;
+  height: 18px;
+}
+
+.rc-drops-badge {
+  min-width: 52px;
+  text-align: center;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.rc-loading {
+  text-align: center;
+  padding: 30px;
+  color: #888;
   font-size: 14px;
 }
 
-/* Responsive */
-@media (max-width: 600px) {
-  .rewards-header {
-    padding: 15px;
-    margin: -20px -20px 15px -20px;
-  }
-
-  .rewards-header h1 {
-    font-size: 20px;
-  }
-
-  .back-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 20px;
-  }
-
-  .header-spacer {
-    width: 36px;
-  }
-
-  .total-drops-card {
-    padding: 12px;
-  }
-
-  .drops-icon {
-    font-size: 32px;
-    margin-right: 10px;
-  }
-
-  .drops-amount {
-    font-size: 24px;
-  }
-
-  .drops-item {
-    padding: 8px 10px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .item-right {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .redemption-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.rc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+  color: #888;
+  font-size: 14px;
+  text-align: center;
 }
 
-@media (min-width: 600px) {
-  .redemption-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-  }
-}
+.rc-empty-icon svg { width: 48px; height: 64px; }
 
+/* ── Desktop ── */
 @media (min-width: 768px) {
-  .rewards-header { padding: 24px; }
-  .rewards-header h1 { font-size: 26px; }
-  .total-drops-card { padding: 20px; border-radius: 18px; }
-  .drops-icon { font-size: 42px; }
-  .drops-amount { font-size: 32px; }
-  .drops-label { font-size: 14px; }
-  .drops-list { gap: 10px; }
-  .drops-item { padding: 14px 16px; }
-  .item-label { font-size: 15px; }
-  .item-value { font-size: 15px; }
-  .redemption-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; }
-  .redemption-card { padding: 16px; border-radius: 14px; }
-  .messages-container { padding: 16px; gap: 14px; }
-}
-
-/* ─── Desktop (≥1024px) ─── */
-@media (min-width: 1024px) {
-  .rewards-header h1 { font-size: 30px; }
-  .total-drops-card { padding: 24px; }
-  .drops-icon { font-size: 48px; }
-  .drops-amount { font-size: 36px; }
-  .drops-label { font-size: 16px; }
-  .drops-item { padding: 16px 18px; }
-  .item-label { font-size: 16px; }
-  .item-value { font-size: 16px; }
-  .redemption-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
-  .redemption-card { padding: 20px; }
-  .guide-item h3 { font-size: 18px; }
-  .guide-item p { font-size: 15px; }
+  .rc-page { max-width: 860px; padding: 0 32px 80px; }
+  .rc-hero { border-radius: 20px; margin-top: 20px; }
+  .rc-balance-num { font-size: 80px; }
+  .rc-drop-icon svg { width: 60px; height: 80px; }
 }

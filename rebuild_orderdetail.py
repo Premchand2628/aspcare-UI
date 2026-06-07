@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+
+content = r'''import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
@@ -263,7 +266,6 @@ const OrderDetail = () => {
             <span className="od-info-val">{order?.serviceType || 'HOME'}</span>
           </div>
         </div>
-        <div className="od-info-vdivider"></div>
         <div className="od-info-card">
           <div className="od-info-icon-wrap">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -521,3 +523,8 @@ const OrderDetail = () => {
 };
 
 export default OrderDetail;
+'''
+
+with open(r'E:\Car wash\MainApp\src\pages\OrderDetail.jsx', 'w', encoding='utf-8') as f:
+    f.write(content)
+print('OrderDetail.jsx written OK, lines:', content.count('\n'))

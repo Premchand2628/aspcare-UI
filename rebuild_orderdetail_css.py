@@ -1,4 +1,7 @@
-/* =========================================
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+
+css = """/* =========================================
    ORDER DETAIL PAGE
    ========================================= */
 
@@ -546,96 +549,8 @@
   .modal-overlay { align-items: center; }
   .cancel-popup, .reschedule-popup { border-radius: 24px; max-height: 80vh; }
 }
+"""
 
-/* =========================================
-   DESKTOP OVERRIDES (>= 768px)
-   ========================================= */
-@media (min-width: 768px) {
-  .od-page {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 28px 36px 60px;
-    background: #fff;
-    min-height: 100vh;
-  }
-
-  .od-top-bar {
-    padding: 0 0 20px 0;
-    background: transparent;
-  }
-
-  .od-order-number { font-size: 22px; }
-
-  /* Info cards: one unified white card with vertical divider */
-  .od-info-cards {
-    flex-direction: row;
-    padding: 16px 20px;
-    background: #fff;
-    border: 1.5px solid #e8e8f0;
-    border-radius: 14px;
-    gap: 0;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-
-  .od-info-card {
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    padding: 0;
-    flex: 1;
-  }
-
-  .od-info-vdivider {
-    width: 1px;
-    height: 50px;
-    background: #e0e0e8;
-    flex-shrink: 0;
-    margin: 0 20px;
-    display: block;
-  }
-
-  /* Car image taller */
-  .od-image-wrapper { margin: 0 0 20px; border-radius: 16px; }
-  .od-service-image { height: 260px; }
-
-  /* Detail rows: side-by-side in one card */
-  .od-detail-rows {
-    flex-direction: row;
-    margin: 0 0 20px;
-  }
-
-  .od-detail-row {
-    flex: 1;
-    border-bottom: none;
-    border-right: 1px solid #f0eff8;
-    padding: 16px 20px;
-  }
-
-  .od-detail-row:last-child { border-right: none; }
-
-  /* Subscription redeemed */
-  .od-sub-redeemed-card { margin: 0 0 20px; }
-
-  /* Price breakdown */
-  .od-price-breakdown { margin: 0 0 20px; padding: 20px 24px; }
-  .od-price-label  { font-size: 15px; }
-  .od-price-value  { font-size: 15px; }
-  .od-total-label  { font-size: 16px; }
-  .od-total-value  { font-size: 16px; }
-
-  /* Action buttons */
-  .od-actions-row { margin: 0 0 20px; gap: 16px; }
-  .od-reschedule-btn, .od-cancel-btn { font-size: 16px; padding: 16px 0; }
-
-  /* Status badge */
-  .od-status-badge { margin: 0 0 20px; }
-
-  /* Modals center on desktop */
-  .modal-overlay { align-items: center; padding: 24px; }
-  .cancel-popup, .reschedule-popup {
-    border-radius: 20px;
-    max-width: 520px;
-    max-height: 80vh;
-  }
-}
+with open(r'E:\Car wash\MainApp\src\styles\OrderDetail.css', 'w', encoding='utf-8') as f:
+    f.write(css)
+print('CSS written, lines:', css.count('\n'))

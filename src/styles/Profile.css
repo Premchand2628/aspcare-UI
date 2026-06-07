@@ -31,11 +31,11 @@
 
 /* User Card */
 .user-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #3b4fce;
   border-radius: 20px;
   padding: 25px;
   margin-bottom: 25px;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 15px rgba(59, 79, 206, 0.35);
 }
 
 .user-name {

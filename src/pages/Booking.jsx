@@ -23,6 +23,13 @@ const normalizeWashType = (value) => {
   return 'Foam';
 };
 
+// Display-only name mapping — backend values unchanged
+const washDisplayName = (t) => {
+  if (t === 'Basic') return 'Standard';
+  if (t === 'Foam') return 'Deluxe';
+  return t;
+};
+
 const normalizeServiceType = (value) => {
   const normalized = String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
   if (normalized === 'SELFDRIVE') return 'SELF_DRIVE';
@@ -44,6 +51,7 @@ const Booking = () => {
   const selectedSubscription = location.state?.subscription || null;
   const prefilledCarType = location.state?.prefilledCarType || '';
   const prefilledWashType = location.state?.prefilledWashType || '';
+  const selectedService = location.state?.service || 'exterior';
   const initialVehicle = selectedSubscription ? normalizeCarType(selectedSubscription.carType) : normalizeCarType(prefilledCarType);
   const initialWashType = selectedSubscription
     ? normalizeWashType(selectedSubscription.washType)
@@ -372,6 +380,21 @@ const Booking = () => {
     return hour < 12 ? `${hour}am` : `${hour - 12}pm`;
   };
 
+  const formatSlotFull = (slot) => {
+    if (!slot) return slot;
+    const [start, end] = slot.split('-');
+    if (!start || !end) return slot;
+    const fmtTime = (t) => {
+      const [hStr, mStr] = t.split(':');
+      const h = parseInt(hStr, 10);
+      if (isNaN(h)) return t;
+      const ampm = h < 12 ? 'AM' : 'PM';
+      const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      return `${String(h12).padStart(2, '0')}:${mStr || '00'}${ampm}`;
+    };
+    return `${fmtTime(start)}-${fmtTime(end)}`;
+  };
+
   const VEHICLE_META = {
     HATCHBACK: { desc: 'Compact car', img: '/images/hatchback.png' },
     SEDAN:     { desc: 'Standard car', img: '/images/sedan.png' },
@@ -382,9 +405,24 @@ const Booking = () => {
   };
 
   const WASH_FEATURES = {
-    Basic:   ['Exterior rinse', 'Wheel clean', 'Window wipe', 'Air freshener'],
-    Foam:    ['Foam exterior wash', 'Tyre & wheel clean', 'Interior vacuum', 'Mirror & window clean'],
-    Premium: ['Full foam wash', 'Engine bay rinse', 'Interior detail & polish', 'Wax coating'],
+    Basic: {
+      exterior: ['Pressure wash', 'Rinse with Hand'],
+      interior: ['Hand cleaning'],
+      fullwash: ['Wash with hands', 'Rinse with Hand', 'Hand cleaning'],
+      teflon:   ['Teflon'],
+    },
+    Foam: {
+      exterior: ['Pressure wash', 'Foam wash', 'Mats'],
+      interior: ['Steam wash', 'Mats'],
+      fullwash: ['Pressure wash', 'Foam wash', 'Mats cleaning', 'Interior clean with Hands'],
+      teflon:   ['Teflon', 'Air check', 'Free Air Freshner'],
+    },
+    Premium: {
+      exterior: ['Pressure wash', 'Foam wash', 'Mats', 'Air check', 'One time fresher', 'Free Air fresher'],
+      interior: ['Steam wash', 'Mats', 'Air check', 'One time fresher', 'Free Air fresher'],
+      fullwash: ['Pressure wash', 'Foam wash', 'Steam wash', 'Mats', 'Air check', 'One time fresher', 'Free Air fresher'],
+      teflon:   ['Teflon', 'Air check', 'Air freshner', 'Interior basic clean'],
+    },
   };
 
   const WASH_ICONS = { Basic: '💧', Foam: '🫧', Premium: '✨' };
@@ -1253,34 +1291,54 @@ const Booking = () => {
       {/* Select Address Action / Selected Address Card / Selected Centre Card */}
       {/* Booking Details */}
       <div className="booking-details">
-        <div className="booking-info-card" onClick={() => setShowCalendar(true)}>
-          <div className="booking-schedule">
-            <span className="schedule-icon-svg" aria-hidden="true">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="schedule-pills-row">
+          {/* Date pill */}
+          <button
+            type="button"
+            className="schedule-pill date-pill"
+            onClick={() => setShowCalendar(true)}
+            aria-label="Select date"
+          >
+            <span className="schedule-pill-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/>
                 <line x1="3" y1="10" x2="21" y2="10"/>
                 <line x1="8" y1="2" x2="8" y2="6"/>
                 <line x1="16" y1="2" x2="16" y2="6"/>
               </svg>
             </span>
-            <div className="schedule-text-col">
-              <span className="schedule-date-text">
-                {selectedDate ? formatDate(selectedDate) : 'Select date'}
-              </span>
-              <span
-                className={`schedule-time-text${selectedTimeSlot ? '' : ' muted'}`}
-                onClick={(e) => { if (selectedDate) { e.stopPropagation(); setShowTimeSlots(true); } }}
-              >
-                {selectedTimeSlot || (selectedDate ? 'Tap to pick time' : 'Select time slot')}
+            <div className="schedule-pill-content">
+              <span className="schedule-pill-top-label">Select Date</span>
+              <span className="schedule-pill-val">
+                {selectedDate ? formatDateWithMonth(selectedDate) : '—'}
               </span>
             </div>
-          </div>
+          </button>
+
+          <span className="schedule-pills-amp">&amp;</span>
+
+          {/* Time slot pill */}
           <button
-            className="points-badge"
-            onClick={(e) => { e.stopPropagation(); setShowCalendar(true); }}
-            aria-label="Pick date"
+            type="button"
+            className={`schedule-pill time-pill${!selectedDate ? ' disabled' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (selectedDate) setShowTimeSlots(true);
+              else setShowCalendar(true);
+            }}
+            aria-label="Select time slot"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+            <div className="schedule-pill-content">
+              <span className="schedule-pill-top-label">Time Slot</span>
+              <span className={`schedule-pill-val${!selectedTimeSlot ? ' placeholder' : ''}`}>
+                {selectedTimeSlot ? formatSlotFull(selectedTimeSlot) : 'HH:MM–HH:MM'}
+              </span>
+            </div>
+            <span className="schedule-pill-chevron">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </span>
           </button>
         </div>
 
@@ -1290,7 +1348,7 @@ const Booking = () => {
             <div className="subscription-lock-summary-row">
               <span className="subscription-lock-summary-label">🔒 Wash type locked by subscription plan</span>
               <span className="subscription-lock-summary-sep">:</span>
-              <span className="subscription-lock-summary-value">{washType || normalizeWashType(selectedSubscription?.washType)}</span>
+              <span className="subscription-lock-summary-value">{washDisplayName(washType || normalizeWashType(selectedSubscription?.washType))}</span>
             </div>
           </div>
         )}
@@ -1343,27 +1401,22 @@ const Booking = () => {
                   <button type="button" className="edit-date-btn" onClick={handleEditDate}>Change!</button>
                 </div>
               )}
-              <div className="timeslot-legend">
-                <span className="timeslot-legend-note">• Every slot is 1 hour</span>
-                <span className="timeslot-legend-item">
-                  <span className="timeslot-legend-dot available"></span> Available
-                </span>
-                <span className="timeslot-legend-item">
-                  <span className="timeslot-legend-dot booked"></span> Booked
-                </span>
-              </div>
               {loadingSlots ? (
                 <p className="timeslots-loading">Loading available slots...</p>
               ) : (
-                <div className="timeslots-grid">
+                <div className="timeslots-list">
                   {slotsToRender.map(([slot, isAvailable]) => (
                     <button
                       key={slot}
-                      className={`timeslot-btn ${selectedTimeSlot === slot ? 'active' : ''} ${!isAvailable ? 'booked' : ''}`}
+                      type="button"
+                      className={`timeslot-row ${selectedTimeSlot === slot ? 'active' : ''} ${!isAvailable ? 'booked' : ''}`}
                       onClick={() => isAvailable && handleTimeSlotSelect(slot)}
                       disabled={!isAvailable}
                     >
-                      <span className="timeslot-time">{formatSlotShort(slot)}</span>
+                      <span className="timeslot-row-time">{formatSlotFull(slot)}</span>
+                      <span className={`timeslot-row-badge ${isAvailable ? 'available' : 'booked'}`}>
+                        {isAvailable ? '✓' : '✗'}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -1387,7 +1440,7 @@ const Booking = () => {
               <span className="subscription-lock-summary-value subscription-lock-summary-price">{formatRate(0, 'INR')}</span>
             </div>
           </div>
-        ) : (selectedCentre || isHomeService) ? (
+        ) : (selectedCentre || isHomeService || rawServiceType === 'SELF_DRIVE') ? (
           /* ── WASH PLAN CARDS — service centre & home flow ── */
           <div className="wash-plan-selector">
             <div className="wash-plan-vehicle-mini-row">
@@ -1422,9 +1475,9 @@ const Booking = () => {
                   <div className="wash-plan-card-left">
                     <span className="wash-plan-icon">{WASH_ICONS[type] || '🚿'}</span>
                     <div className="wash-plan-body">
-                      <span className="wash-plan-name">{type} Wash</span>
+                      <span className="wash-plan-name">{washDisplayName(type)} Wash</span>
                       <div className="wash-plan-features">
-                        {(WASH_FEATURES[type] || []).map((f, fi) => (
+                        {(WASH_FEATURES[type]?.[selectedService] || []).map((f, fi) => (
                           <span key={fi} className="wash-plan-feature">✓ {f}</span>
                         ))}
                       </div>

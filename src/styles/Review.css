@@ -1149,3 +1149,22 @@
   cursor: pointer;
   padding: 6px 12px;
 }
+
+
+/* Narrow desktop column tweaks — make booking-row labels compact */
+@media (min-width: 520px) and (max-width: 900px) {
+  .review-left-col .booking-row {
+    grid-template-columns: 22px 70px 10px 1fr;
+    font-size: 13px;
+    padding: 8px 2px;
+  }
+  .review-left-col .booking-label {
+    font-size: 10px;
+  }
+  .review-left-col .booking-info {
+    padding: 12px 12px 10px;
+  }
+  .review-payment-panel { padding: 14px; }
+  .payment-panel-inline .payment-method-option { padding: 10px 12px; }
+  .payment-panel-inline .payment-method-label { font-size: 13px; }
+}

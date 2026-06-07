@@ -17,7 +17,7 @@ const PAYMENT_METHODS = [
   }
 ];
 
-function PaymentMethodModal({ open, onClose, onSelect, amount }) {
+function PaymentMethodModal({ open, onClose, onSelect, amount, inline }) {
   const navigate = useNavigate();
   const [selected, setSelected] = useState('');
   const [showCardForm, setShowCardForm] = useState(false);
@@ -83,12 +83,95 @@ function PaymentMethodModal({ open, onClose, onSelect, amount }) {
     setShowUpiForm(false);
   };
 
-  if (!open) return null;
+  if (!inline && !open) return null;
 
   const handleProceed = () => {
     if (!selected) return;
     onSelect(selected);
   };
+
+  if (inline) {
+    return (
+      <div className="payment-panel-inline">
+        {amount != null && (
+          <p className="payment-modal-amount">
+            Amount: <strong>₹{Number(amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong>
+          </p>
+        )}
+        <div className="payment-methods-list">
+          {PAYMENT_METHODS.map((method) => (
+            <div
+              key={method.id}
+              className={`payment-method-option ${selected === method.id ? 'payment-method-selected' : ''}`}
+              onClick={() => { setSelected(method.id); setShowCardForm(false); setShowUpiForm(false); }}
+            >
+              <span className="payment-method-icon" style={{ background: method.color }}>{method.icon}</span>
+              <span className="payment-method-label">{method.label}</span>
+              <span className={`payment-method-radio ${selected === method.id ? 'checked' : ''}`} />
+            </div>
+          ))}
+          <div className={`payment-method-option pm-expandable ${showCardForm || selected === 'card' ? 'payment-method-selected' : ''}`}>
+            <div className="pm-expand-header" onClick={() => { setShowCardForm(!showCardForm); setShowUpiForm(false); setSelected(''); }}>
+              <span className="payment-method-icon" style={{ background: '#1a1a2e' }}>💳</span>
+              <span className="payment-method-label">Add new Credit/Debit Card</span>
+              <span className="pm-modal-chevron">{showCardForm ? '▲' : '▼'}</span>
+            </div>
+            {showCardForm && (
+              <div className="pm-inline-form">
+                <div className="pm-inline-group">
+                  <label>Card Number</label>
+                  <div className="pm-inline-card-wrap">
+                    <input type="text" placeholder="1234 5678 9012 3456" value={cardNumber}
+                      onChange={(e) => setCardNumber(formatCardNum(e.target.value))} maxLength={19} inputMode="numeric" />
+                    {cardType && cardType !== 'Unknown' && (
+                      <span className={`pm-inline-badge pm-badge-${cardType.toLowerCase()}`}>{cardType}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="pm-inline-row">
+                  <div className="pm-inline-group">
+                    <label>Exp Date</label>
+                    <input type="text" placeholder="MM/YY" value={expDate}
+                      onChange={(e) => setExpDate(formatExp(e.target.value))} maxLength={5} inputMode="numeric" />
+                  </div>
+                  <div className="pm-inline-group">
+                    <label>CVV</label>
+                    <input type="password" placeholder="•••" value={cvv}
+                      onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} maxLength={4} inputMode="numeric" />
+                  </div>
+                </div>
+                <div className="pm-inline-group">
+                  <label>Name on Card</label>
+                  <input type="text" placeholder="John Doe" value={nameOnCard} onChange={(e) => setNameOnCard(e.target.value)} />
+                </div>
+                {cardError && <p className="pm-inline-error">{cardError}</p>}
+                <button className="pm-inline-save" onClick={handleSaveCard}>Save Card</button>
+              </div>
+            )}
+          </div>
+          <div className={`payment-method-option pm-expandable ${showUpiForm || selected === 'upi' ? 'payment-method-selected' : ''}`}>
+            <div className="pm-expand-header" onClick={() => { setShowUpiForm(!showUpiForm); setShowCardForm(false); setSelected(''); }}>
+              <span className="payment-method-icon" style={{ background: '#0b6623' }}>🏦</span>
+              <span className="payment-method-label">Add new UPI ID</span>
+              <span className="pm-modal-chevron">{showUpiForm ? '▲' : '▼'}</span>
+            </div>
+            {showUpiForm && (
+              <div className="pm-inline-form">
+                <div className="pm-inline-group">
+                  <label>UPI ID</label>
+                  <input type="text" placeholder="yourname@upi" value={upiId} onChange={(e) => setUpiId(e.target.value)} />
+                </div>
+                <button className="pm-inline-save" onClick={handleSaveUpi}>Save UPI ID</button>
+              </div>
+            )}
+          </div>
+        </div>
+        <button className="payment-proceed-btn" disabled={!selected} onClick={handleProceed}>
+          Proceed to Pay
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="payment-modal-overlay" onClick={onClose}>

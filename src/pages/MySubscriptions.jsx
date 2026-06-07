@@ -123,12 +123,9 @@ function MySubscriptions() {
 
   return (
     <div className="page-container my-subscriptions-page">
-      <header className="subscriptions-header">
-        <button className="subscriptions-back-btn" onClick={() => navigate('/profile')}>←</button>
-        <h1>My Subscriptions</h1>
-        <div className="subscriptions-header-spacer" />
-      </header>
-      <div className="subscriptions-strip-line" />
+      <div className="subs-splash-wrap">
+        <img src="/images/car-wash-splash.png" alt="Car Wash" className="subs-splash-img" />
+      </div>
 
       {loading && (
         <>
@@ -155,13 +152,24 @@ function MySubscriptions() {
 
       {!loading && !error && items.length > 0 && (
         <div className="subscriptions-list">
-          <p className="subscriptions-tap-hint">Tap to view the details</p>
+          {/* Single tagline pill from first item */}
+          {(() => {
+            const first = items[0];
+            const isHome = normalizeServiceType(first.serviceType) === 'HOME';
+            const needsWater = String(first.waterProvided || '').toUpperCase() === 'Y';
+            const tagline = isHome ? (needsWater ? 'Sit, Book, Relax' : 'Sit, Book & Relax') : 'Book and get it done';
+            return (
+              <div className="subs-tagline-banner">
+                <span className="subs-tagline-pill">{tagline}</span>
+                <p className="subscriptions-tap-hint">Tap to view details</p>
+              </div>
+            );
+          })()}
           {items.map((item) => {
             const leftWashes = Number(item.leftWashes ?? 0);
             const isBookDisabled = leftWashes <= 0;
             const isHome = normalizeServiceType(item.serviceType) === 'HOME';
             const needsWater = String(item.waterProvided || '').toUpperCase() === 'Y';
-            const tagline = isHome ? (needsWater ? 'Sit, Book, Relax' : 'Sit, Book & Relax') : 'Book and get it done';
             const locationLabel = isHome ? '@Home' : '@Center';
 
             return (
@@ -170,25 +178,25 @@ function MySubscriptions() {
               className={`subscription-card ${expandedRowId === item.id ? 'subscription-card-active' : ''}`}
               onClick={() => toggleRow(item.id)}
             >
-              <div className="subscription-compact-row">
-                <p className="subscription-tagline">{tagline}</p>
-                <p className="subscription-left-text">
-                  <span className="left-label">Left:</span> <span className={`left-count ${leftWashes >= 3 ? 'washes-green' : leftWashes === 2 ? 'washes-orange' : 'washes-red'}`}>{leftWashes}</span>
-                </p>
-              </div>
-
-              <div className="subscription-desc-row">
-                <p className="subscription-description">
-                  Book your <strong className="highlight-car-type">{item.carType || 'N/A'}</strong> {item.washType || 'N/A'} wash <strong className="highlight-service-type">{locationLabel}</strong>
-                </p>
-                <button
+              <div className="subscription-main-row">
+                <div className="subscription-desc-col">
+                  <p className="subscription-description">
+                    <strong className="highlight-car-type">{item.carType || 'N/A'}</strong> {item.washType || 'N/A'} wash <strong className="highlight-service-type">{locationLabel}</strong>
+                  </p>
+                  {isHome && needsWater && (
+                    <p className="subscription-water-note">Please provide water to the washer</p>
+                  )}
+                </div>
+                <div className="subscription-right-col">
+                  <p className="subscription-left-text">
+                    <span className="left-label">Left:</span> <span className={`left-count ${leftWashes >= 3 ? 'washes-green' : leftWashes === 2 ? 'washes-orange' : 'washes-red'}`}>{leftWashes}</span>
+                  </p>
+                  <button
                     className="subscription-book-btn"
                     disabled={isBookDisabled}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (isBookDisabled) {
-                        return;
-                      }
+                      if (isBookDisabled) return;
                       const normalizedServiceType = normalizeServiceType(item.serviceType);
                       const destination = normalizedServiceType === 'HOME' ? '/booking' : '/select-center';
                       navigate(destination, {
@@ -202,11 +210,8 @@ function MySubscriptions() {
                   >
                     Book
                   </button>
+                </div>
               </div>
-
-              {isHome && needsWater && (
-                <p className="subscription-water-note">Please provide water to the washer</p>
-              )}
 
               {expandedRowId === item.id && (
                 <div className="subscription-details-block">

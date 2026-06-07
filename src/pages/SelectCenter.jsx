@@ -536,7 +536,8 @@ const SelectCenter = () => {
         serviceType,
         subscription,
         source: location.state?.source || null,
-        prefilledCarType: location.state?.prefilledCarType || null
+        prefilledCarType: location.state?.prefilledCarType || null,
+        service: location.state?.service || null
       }
     });
   };
@@ -720,7 +721,8 @@ const SelectCenter = () => {
               serviceType,
               subscription,
               source: location.state?.source || null,
-              prefilledCarType: location.state?.prefilledCarType || null
+              prefilledCarType: location.state?.prefilledCarType || null,
+              service: location.state?.service || null
             }
           })}
         >
@@ -792,6 +794,7 @@ const SelectCenter = () => {
                                     source: location.state?.source || null,
                                     prefilledCarType: row.carType || vehicleKey,
                                     prefilledWashType: row.washType,
+                                    service: location.state?.service || null,
                                   }
                                 });
                               };

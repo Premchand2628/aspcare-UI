@@ -4,7 +4,6 @@ import BottomNav from '../components/BottomNav';
 import PaymentMethodModal from '../components/PaymentMethodModal';
 import { readBookingsCache, writeBookingsCache } from '../utils/bookingsCache';
 import { getValidatedAuthToken, withAuthHeader } from '../utils/auth';
-import { OrdersListSkeleton, useDelayedFlag, LoadingAnnouncer } from '../components/Skeleton';
 import '../styles/Orders.css';
 
 const Orders = () => {
@@ -13,7 +12,6 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [visibleOrdersCount, setVisibleOrdersCount] = useState(ORDERS_BATCH_SIZE);
   const [loading, setLoading] = useState(true);
-  const showLoadingSkeleton = useDelayedFlag(loading, 150);
   const [error, setError] = useState('');
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
   const [upgradeOrder, setUpgradeOrder] = useState(null);
@@ -372,18 +370,13 @@ const Orders = () => {
 
       {/* Orders List */}
       <div className="orders-list">
-        {loading && (
-          <>
-            <LoadingAnnouncer label="Loading orders" />
-            {showLoadingSkeleton && <OrdersListSkeleton count={4} />}
-          </>
-        )}
+        {loading && <p className="loading-message">Loading orders...</p>}
         {!loading && notLoggedIn && (
           <div className="orders-login-prompt">
-            <div className="orders-login-icon">🎉</div>
-            <h2 className="orders-login-title">Get ₹20 Off on your first order!</h2>
-            <p className="orders-login-desc">Login or signup to book your first wash and claim your discount</p>
-            <button className="orders-login-btn" onClick={() => navigate('/login', { state: { from: { pathname: '/orders' } } })}>Login / Signup</button>
+            <div className="orders-login-icon">🔒</div>
+            <h2 className="orders-login-title">Please login to see your orders</h2>
+            <p className="orders-login-desc">Sign in to view and manage your bookings</p>
+            <button className="orders-login-btn" onClick={() => navigate('/login')}>Login / Signup</button>
           </div>
         )}
         {error && !noPhone && !notLoggedIn && <p className="error-message">{error}</p>}

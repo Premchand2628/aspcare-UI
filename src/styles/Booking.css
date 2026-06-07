@@ -372,6 +372,90 @@
   font-weight: 500;
 }
 
+/* ── Schedule pills row (date & time trigger) ── */
+.schedule-pills-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.schedule-pills-amp {
+  font-size: 14px;
+  font-weight: 800;
+  color: #5E4DB2;
+  flex-shrink: 0;
+}
+
+.schedule-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  background: #f8f7ff;
+  border: 1.5px solid #e8e4f8;
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(94, 77, 178, 0.07);
+}
+
+.schedule-pill:hover {
+  border-color: #5E4DB2;
+  box-shadow: 0 2px 10px rgba(94, 77, 178, 0.18);
+}
+
+.schedule-pill.disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.schedule-pill-icon {
+  display: flex;
+  align-items: center;
+  color: #5E4DB2;
+  flex-shrink: 0;
+}
+
+.schedule-pill-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.schedule-pill-top-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9990c0;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.schedule-pill-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2d2754;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schedule-pill-val.placeholder {
+  color: #9990c0;
+  font-weight: 500;
+}
+
+.schedule-pill-chevron {
+  display: flex;
+  align-items: center;
+  color: #5E4DB2;
+  flex-shrink: 0;
+}
+
 .booking-wash-type {
   display: flex;
   align-items: center;
@@ -711,58 +795,86 @@
   margin-bottom: 20px;
 }
 
-.timeslots-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+.timeslots-list {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-bottom: 16px;
 }
 
-.timeslot-btn {
-  padding: 10px 4px;
-  background-color: #e8f5e9;
-  border: 2px solid #a5d6a7;
-  border-radius: 10px;
-  font-size: 13px;
-  color: #1b5e20;
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  font-weight: 700;
+.timeslot-row {
   display: flex;
-  flex-direction: column;
-  gap: 0;
   align-items: center;
-  line-height: 1.2;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: #f8f9ff;
+  border: 1.5px solid #e8e4f8;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
 }
 
-.timeslot-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
-}
-
-.timeslot-btn.active {
-  background-color: #5E4DB2;
-  color: white;
+.timeslot-row:hover:not(:disabled) {
   border-color: #5E4DB2;
-  box-shadow: 0 4px 12px rgba(94,77,178,0.4);
+  background: #f0eeff;
 }
 
-.timeslot-btn.booked,
-.timeslot-btn:disabled {
-  background-color: #ffebee;
-  border-color: #ef9a9a;
-  color: #b71c1c;
+.timeslot-row.active {
+  background: #5E4DB2;
+  border-color: #5E4DB2;
+}
+
+.timeslot-row.booked,
+.timeslot-row:disabled {
+  background: #fafafa;
+  border-color: #e0e0e0;
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
-.timeslot-time {
-  font-size: 13px;
+.timeslot-row-time {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2d2754;
+}
+
+.timeslot-row.active .timeslot-row-time {
+  color: #fff;
+}
+
+.timeslot-row.booked .timeslot-row-time,
+.timeslot-row:disabled .timeslot-row-time {
+  color: #aaa;
+  text-decoration: line-through;
+}
+
+.timeslot-row-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
   font-weight: 800;
-  color: inherit;
+  flex-shrink: 0;
 }
 
-.timeslot-status {
-  display: none;
+.timeslot-row-badge.available {
+  background: #43a047;
+  color: #fff;
+}
+
+.timeslot-row.active .timeslot-row-badge.available {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+}
+
+.timeslot-row-badge.booked {
+  background: #ffcdd2;
+  color: #b71c1c;
 }
 
 /* Legend */
@@ -1928,8 +2040,9 @@
   .calendar-modal h3 { font-size: 22px; }
   .timeslot-modal { max-width: 480px; padding: 36px; }
   .timeslot-modal h3 { font-size: 22px; }
-  .timeslots-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  .timeslot-btn { padding: 14px; font-size: 15px; }
+  .timeslots-list { gap: 10px; }
+  .timeslot-row { padding: 14px 18px; }
+  .timeslot-row-time { font-size: 15px; }
 }
 
 
@@ -2719,4 +2832,76 @@
   object-fit: contain;
   display: block;
   margin: 0 auto;
+}
+
+
+/* ============================================
+   Desktop two-column responsive layout (≥520px)
+   ============================================ */
+@media (min-width: 520px) {
+  .booking-details {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 20px;
+    row-gap: 14px;
+    align-items: start;
+  }
+
+  /* Row 1: vehicle row spans full width at the top */
+  .booking-details > .vehicle-selection,
+  .booking-details > .wash-plan-vehicle-mini-row {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  /* Left column items — explicit rows starting at row 2 */
+  .booking-details > .booking-info-card { grid-column: 1; grid-row: 2; }
+  .booking-details > .subscription-banner { grid-column: 1; grid-row: 2; }
+  .booking-details > .booking-wash-type-standalone:not(.booking-wash-type-in-row) { grid-column: 1; grid-row: 3; }
+  .booking-details > .subscription-lock-summary { grid-column: 1; grid-row: 3; }
+  .booking-details > .water-wash-row { grid-column: 1; grid-row: 4; }
+  .booking-details > .select-address-row { grid-column: 1; grid-row: 5; }
+  .booking-details > .booking-summary-row { grid-column: 1; grid-row: 6; }
+  .booking-details > .vehicle-number-error { grid-column: 1; grid-row: 7; }
+  .booking-details > .review-action-row { grid-column: 1; grid-row: 8; }
+  .booking-details > .benefits-note { grid-column: 1; grid-row: 9; }
+  .booking-details > .benefits-note-error { grid-column: 1; grid-row: 9; }
+
+  /* Right column: wash plan cards stack on the right (spans left's rows) */
+  .booking-details > .wash-plan-selector {
+    grid-column: 2;
+    grid-row: 2 / 10;
+    align-self: start;
+    margin: 0;
+  }
+
+  /* Home banner — at the bottom, spanning full width, centered */
+  .booking-details > .booking-home-banner {
+    grid-column: 1 / -1;
+    grid-row: 10;
+    max-width: 460px;
+    margin: 16px auto 0;
+    width: 100%;
+  }
+
+  /* Center the vehicle mini row on top */
+  .wash-plan-vehicle-mini-row {
+    justify-content: center;
+    overflow-x: visible;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 8px 0 16px;
+  }
+
+  /* Constrain vehicle carousel max width and center */
+  .booking-details > .vehicle-selection {
+    max-width: 760px;
+    margin: 0 auto !important;
+    width: 100%;
+  }
+
+  .booking-details > .review-action-row {
+    margin-top: 8px;
+  }
 }
