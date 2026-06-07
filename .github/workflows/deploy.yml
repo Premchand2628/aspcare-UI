@@ -42,4 +42,9 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # Remove any proxy_cache_path lines previously injected into nginx.conf
+            # (the canonical definition lives in /etc/nginx/conf.d/carwash-cache.conf)
+            sudo sed -i '/proxy_cache_path.*carwash_api_cache/d' /etc/nginx/nginx.conf
+            sudo sed -i '/proxy_cache_lock_timeout/d' /etc/nginx/nginx.conf
+            sudo sed -i '/proxy_cache_lock on/d' /etc/nginx/nginx.conf
             sudo nginx -t && sudo systemctl reload nginx
